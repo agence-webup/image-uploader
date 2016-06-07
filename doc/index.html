@@ -34,45 +34,17 @@
         <h2>Options</h2>
 
         <dl>
-            <dt>maxItems</dt>
+            <dt>maxItems = int</dt>
             <dd>int Max number of images</dd>
-        </dl>
 
-        <h2>Methods</h2>
+            <dt>ajax.add = function(file, callback, progress)</dt>
+            <dd>override ajax query to add picture</dd>
 
-        <pre>
-            // example of picture object
-            // url can be url or image in base64
-            var picture = {
-                url: 'http://example.com/picture.jpg'
-            };
-        </pre>
+            <dt>ajax.update = function(picture, file, callback, progress)</dt>
+            <dd>override ajax query to update picture</dd>
 
-        <dl>
-            <dt>add(picture)</dt>
-            <dd>Add picture</dd>
-
-            <dt>update(index, picture)</dt>
-            <dd>Update picture at index</dd>
-
-            <dt>delete(index)</dt>
-            <dd>Remove picture at index</dd>
-
-            <dt>on(event, callable)</dt>
-            <dd>Bind function to an event</dd>
-        </dl>
-
-        <h2>Events</h2>
-
-        <dl>
-            <dt>adding</dt>
-            <dd>Call before add</dd>
-
-            <dt>updating</dt>
-            <dd>Call before update</dd>
-
-            <dt>deleting</dt>
-            <dd>Call before delete</dd>
+            <dt>ajax.delete = function(photo, callback)</dt>
+            <dd>override ajax query to delete picture</dd>
         </dl>
 
         <script src="/uploader/uploader.js"></script>

@@ -3,22 +3,43 @@ var helper = require('./helper');
 // define default options
 var defaults = {
     maxItems: null,
+    ajax: {
+        add: function (file, callback, progress) {
+
+        },
+        update: function (picture, file, callback, progress) {
+
+        },
+        delete: function (picture, callback) {
+
+        }
+    }
 };
 
 var ImageUploader = function (el, options) {
     this.el = helper.querySelector(el);
     this.options = helper.extend(defaults, options);
 
-    this.editMode = false;
-    this.editIndex = null;
-
     this.pictures = [];
     this.pictureViews = [];
+
+    this.addView = null;
+    this.fileInput = null;
+
+    this.progressView = null;
+    this.progressBar = null;
+
+    this.editMode = false;
+    this.editIndex = null;
 
     initView.call(this);
 }
 
-ImageUploader.prototype.add = function (picture) {
+
+/* Private methods
+-------------------------------------------------------------- */
+
+function add(picture) {
     this.pictures.push(picture);
 
     var deletable = true;
@@ -33,14 +54,14 @@ ImageUploader.prototype.add = function (picture) {
             this.addView.classList.remove('hidden');
         }
     }
-};
+}
 
-ImageUploader.prototype.update = function (index, picture) {
+function update(index, picture) {
     this.pictures[index] = picture;
     this.pictureViews[index].querySelector('img').setAttribute('src', picture.url);
-};
+}
 
-ImageUploader.prototype.delete = function (index) {
+function remove(index) {
     var pictureView = this.pictureViews[index];
     pictureView.parentNode.removeChild(pictureView);
 
@@ -55,10 +76,7 @@ ImageUploader.prototype.delete = function (index) {
             this.addView.classList.remove('hidden');
         }
     }
-};
-
-/* Private methods
--------------------------------------------------------------- */
+}
 
 function initView() {
     if (! this.el.classList.contains('uploader')) {
@@ -66,13 +84,14 @@ function initView() {
     }
 
     initAddView.call(this);
+    initProgressView.call(this);
 }
 
 function initAddView() {
     var template = '<div class="uploader-item">'
-    + '<input type="file" class="hidden" data-js="file-input">'
-    + '<button class="uploader__btn-add" data-js="openFilePicker">Add</button>'
-    + '</div>';
+        + '<input type="file" class="hidden" data-js="file-input">'
+        + '<button class="uploader__btn-add" data-js="openFilePicker">Add</button>'
+        + '</div>';
 
     this.addView = helper.parseHTML(template);
     this.fileInput = this.addView.querySelector('[data-js="file-input"]');
@@ -89,6 +108,18 @@ function initAddView() {
 
     this.el.appendChild(this.addView);
 }
+
+function initProgressView() {
+    var template = '<div class="uploader-item hidden">'
+        + '<div class="uploader__progress">'
+        + '<span style="width: 0%" data-js="progress-bar"></span>'
+        + '</div>'
+        + '<div class="uploader__loading">Envoi en cours...</div>'
+        + '</div>';
+
+    this.progressView = helper.parseHTML(template);
+    this.progressBar = this.progressView.querySelector('[data-js="progress-bar"]');
+};
 
 function makePictureView(picture, deletable) {
     var template = '<div class="uploader-item">';
@@ -117,7 +148,10 @@ function makePictureView(picture, deletable) {
 
             var index = that.pictureViews.indexOf(pictureView);
             if (index != -1) {
-                that.delete(index);
+                var picture = that.pictures[index];
+                that.options.ajax.delete(picture, function() {
+                    remove.call(that, index);
+                });
             }
         });
     }
@@ -125,28 +159,57 @@ function makePictureView(picture, deletable) {
     return pictureView;
 };
 
+function displayProgressView() {
+    this.progressBar.style.width = '0%';
+    this.progressView.classList.remove('hidden');
+
+    if (this.editMode) {
+        var pictureView = this.pictureViews[this.editIndex];
+        pictureView.classList.add('hidden');
+        this.el.insertBefore(this.progressView, pictureView);
+    } else {
+        this.addView.classList.add('hidden');
+        this.el.insertBefore(this.progressView, this.addView);
+    }
+};
+
+function dismissProgressView() {
+    this.progressView.parentNode.removeChild(this.progressView);
+}
+
+function updateProgressBar(percent) {
+    this.progressBar.style.width = percent.toFixed() + '%';
+}
+
 function uploadFile(input) {
     if (input.length == 0) {
         return;
     }
 
     var file = input.files[0];
-
     var that = this;
-    var reader = new FileReader();
-    reader.onload = function (event) {
-        var picture = {
-            url: event.target.result
-        };
 
-        if (that.editMode) {
-            that.update(that.editIndex, picture);
-        } else {
-            that.add(picture);
-        }
+    displayProgressView.call(this);
+
+    if (that.editMode) {
+        var picture = that.pictures[that.editIndex];
+
+        this.options.ajax.update(picture, file, function(picture) {
+            dismissProgressView.call(that);
+            update.call(that, that.editIndex, picture);
+            that.pictureViews[that.editIndex].classList.remove('hidden');
+        }, function(percent) {
+            updateProgressBar.call(that, percent);
+        });
+
+    } else {
+        this.options.ajax.add(file, function(picture) {
+            dismissProgressView.call(that);
+            add.call(that, picture);
+        }, function(percent) {
+            updateProgressBar.call(that, percent);
+        });
     }
-    reader.readAsDataURL(file);
-
 
     this.fileInput.value = null;
 };
