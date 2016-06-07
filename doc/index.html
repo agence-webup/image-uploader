@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Image uploader</title>
+        <link rel="stylesheet" href="/uploader/uploader.css" media="all">
+    </head>
+    <body>
+        <h1>Image uploader</h1>
+
+        <h2>Example</h2>
+
+        <div data-js="uploader"></div>
+
+        <pre>
+            var uploader = new ImageUploader('[data-js="uploader"]', {
+                maxItems: 2
+            });
+            uploader.on('adding', function(file, done, progress) {
+                progress(10);
+                var croppedFile = crop(file, 200, 200);
+                progress(50);
+                var picture = {
+                    url: croppedFile
+                };
+                progress(100);
+                done(picture);
+            });
+            uploader.add({
+                url: 'http://example.com/picture.jpg'
+            });
+        </pre>
+
+        <h2>Options</h2>
+
+        <dl>
+            <dt>maxItems</dt>
+            <dd>int Max number of images</dd>
+        </dl>
+
+        <h2>Methods</h2>
+
+        <pre>
+            // example of picture object
+            // url can be url or image in base64
+            var picture = {
+                url: 'http://example.com/picture.jpg'
+            };
+        </pre>
+
+        <dl>
+            <dt>add(picture)</dt>
+            <dd>Add picture</dd>
+
+            <dt>update(index, picture)</dt>
+            <dd>Update picture at index</dd>
+
+            <dt>delete(index)</dt>
+            <dd>Remove picture at index</dd>
+
+            <dt>on(event, callable)</dt>
+            <dd>Bind function to an event</dd>
+        </dl>
+
+        <h2>Events</h2>
+
+        <dl>
+            <dt>adding</dt>
+            <dd>Call before add</dd>
+
+            <dt>updating</dt>
+            <dd>Call before update</dd>
+
+            <dt>deleting</dt>
+            <dd>Call before delete</dd>
+        </dl>
+
+        <script src="/uploader/uploader.js"></script>
+        <script src="/main.js"></script>
+    </body>
+</html>
