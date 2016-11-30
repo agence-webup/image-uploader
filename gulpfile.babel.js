@@ -7,6 +7,7 @@ import cleanCSS from 'gulp-clean-css';
 import uglify from 'gulp-uglify';
 import babel from 'gulp-babel';
 import ghPages from 'gulp-gh-pages';
+import concat from 'gulp-concat';
 
 const reload = browserSync.reload;
 
@@ -32,13 +33,14 @@ gulp.task('js', () => {
         .pipe(babel({
             presets: ['es2015']
         }))
+        .pipe(concat('image-uploader.js'))
         .pipe(gulp.dest('dist'));
 });
 
 
 gulp.task('deploy', function() {
     return gulp.src('./dist/**/*')
-    .pipe(ghPages());
+        .pipe(ghPages());
 });
 
 
