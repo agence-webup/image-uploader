@@ -30,10 +30,10 @@ gulp.task('css', () => {
 
 gulp.task('js', () => {
     return gulp.src('src/*.js')
+        .pipe(concat('image-uploader.js'))
         .pipe(babel({
             presets: ['es2015']
         }))
-        .pipe(concat('image-uploader.js'))
         .pipe(gulp.dest('dist'));
 });
 
