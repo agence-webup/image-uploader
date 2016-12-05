@@ -53,15 +53,12 @@ var CropperModal = function () {
 
     return CropperModal;
 }();
+
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var ImageUploader = function () {
     function ImageUploader(el) {
-        var _this = this;
+        var _this2 = this;
 
         var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
@@ -75,16 +72,16 @@ var ImageUploader = function () {
         this._pictures = [];
         this._service = new ServiceMock();
 
-        this._service.all(function (pictures) {
-            _this._pictures = pictures;
-            _this.reloadView();
+        this._service.all().then(function (pictures) {
+            _this2._pictures = pictures;
+            _this2.reloadView();
         });
     }
 
     _createClass(ImageUploader, [{
         key: 'uploadFile',
         value: function uploadFile(event) {
-            var _this2 = this;
+            var _this3 = this;
 
             var fileInput = event.target;
             if (fileInput.files.length == 0) {
@@ -94,7 +91,7 @@ var ImageUploader = function () {
 
             if (this.options.cropper) {
                 this.modal = new CropperModal(file, function (data) {
-                    _this2.addPicture(file);
+                    _this3.addPicture(file, data);
                 });
             } else {
                 this.addPicture(file);
@@ -102,15 +99,16 @@ var ImageUploader = function () {
         }
     }, {
         key: 'addPicture',
-        value: function addPicture(file) {
-            var _this3 = this;
+        value: function addPicture(file, crop) {
+            var _this4 = this;
 
             var pictureDto = {
-                file: file
+                file: file,
+                crop: crop
             };
-            this._service.add(pictureDto, function (picture) {
-                // this._pictures.push(picture);
-                _this3.reloadView();
+            this._service.add(pictureDto).then(function (picture) {
+                _this4._pictures.push(picture);
+                _this4.reloadView();
             });
         }
 
@@ -120,7 +118,7 @@ var ImageUploader = function () {
     }, {
         key: 'reloadView',
         value: function reloadView() {
-            var _this4 = this;
+            var _this5 = this;
 
             while (this.el.firstChild) {
                 this.el.removeChild(this.el.firstChild);
@@ -152,17 +150,17 @@ var ImageUploader = function () {
 
                 dropmic.addBtn('Supprimer', function () {
                     var id = dropmic.target.getAttribute('data-dropmic');
-                    _this4._service.delete(id, function () {
-                        _this4._service.all(function (pictures) {
-                            _this4._pictures = pictures;
-                            _this4.reloadView();
+                    _this5._service.delete(id).then(function () {
+                        _this5._service.all().then(function (pictures) {
+                            _this5._pictures = pictures;
+                            _this5.reloadView();
                         });
                     });
                 });
 
                 div.appendChild(img);
 
-                _this4.el.appendChild(div);
+                _this5.el.appendChild(div);
             });
 
             this.initAddView();
@@ -170,18 +168,18 @@ var ImageUploader = function () {
     }, {
         key: 'initAddView',
         value: function initAddView() {
-            var _this5 = this;
+            var _this6 = this;
 
             this._fileInput = createElement('input', {
                 type: 'file'
             });
             this._fileInput.addEventListener('change', function (event) {
-                _this5.uploadFile(event);
+                _this6.uploadFile(event);
             });
 
             var div = document.createElement('div');
             div.addEventListener('click', function (event) {
-                _this5._fileInput.click();
+                _this6._fileInput.click();
             });
 
             div.appendChild(this._fileInput);
@@ -210,11 +208,8 @@ function createElement(tagName) {
 
     return element;
 }
+
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var ServiceMock = function () {
     function ServiceMock() {
@@ -230,39 +225,51 @@ var ServiceMock = function () {
     }
 
     _createClass(ServiceMock, [{
-        key: "all",
-        value: function all(callback) {
-            callback(this._pictures);
-        }
-    }, {
-        key: "add",
-        value: function add(pictureDto, callback) {
-            var _this = this;
+        key: 'all',
+        value: function all() {
+            var _this7 = this;
 
-            var fileReader = new FileReader();
-            fileReader.addEventListener('load', function (event) {
-                var picture = {
-                    id: _this._pictures.length + 1,
-                    url: event.target.result
-                };
-
-                _this._pictures.push(picture);
-                callback(picture);
+            return new Promise(function (resolve, reject) {
+                resolve(_this7._pictures);
             });
-            fileReader.readAsDataURL(pictureDto.file);
         }
     }, {
-        key: "update",
-        value: function update(id, callback) {
-            callback();
+        key: 'add',
+        value: function add(pictureDto) {
+            var _this8 = this;
+
+            return new Promise(function (resolve, reject) {
+                var fileReader = new FileReader();
+                fileReader.addEventListener('load', function (event) {
+                    var picture = {
+                        id: _this8._pictures.length + 1,
+                        url: event.target.result
+                    };
+
+                    _this8._pictures.push(picture);
+                    resolve(picture);
+                });
+                fileReader.readAsDataURL(pictureDto.file);
+            });
         }
     }, {
-        key: "delete",
+        key: 'update',
+        value: function update(id) {
+            return new Promise(function (resolve, reject) {
+                resolve();
+            });
+        }
+    }, {
+        key: 'delete',
         value: function _delete(id, callback) {
-            this._pictures = this._pictures.filter(function (picture) {
-                return picture.id != id;
+            var _this9 = this;
+
+            return new Promise(function (resolve, reject) {
+                _this9._pictures = _this9._pictures.filter(function (picture) {
+                    return picture.id != id;
+                });
+                resolve();
             });
-            callback();
         }
     }]);
 

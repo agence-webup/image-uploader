@@ -11,10 +11,10 @@ class ImageUploader {
         this._pictures = [];
         this._service = new ServiceMock();
 
-        this._service.all((pictures) => {
+        this._service.all().then((pictures) => {
             this._pictures = pictures;
             this.reloadView();
-        })
+        });
     }
 
     uploadFile(event) {
@@ -26,19 +26,20 @@ class ImageUploader {
 
         if (this.options.cropper) {
             this.modal = new CropperModal(file, (data) => {
-                this.addPicture(file);
+                this.addPicture(file, data);
             });
         } else {
             this.addPicture(file);
         }
     }
 
-    addPicture(file) {
+    addPicture(file, crop) {
         var pictureDto = {
-            file: file
+            file: file,
+            crop: crop,
         }
-        this._service.add(pictureDto, (picture) => {
-            // this._pictures.push(picture);
+        this._service.add(pictureDto).then((picture) => {
+            this._pictures.push(picture);
             this.reloadView();
         });
     }
@@ -77,11 +78,11 @@ class ImageUploader {
 
             dropmic.addBtn('Supprimer', () => {
                 var id = dropmic.target.getAttribute('data-dropmic');
-                this._service.delete(id, () => {
-                    this._service.all((pictures) => {
+                this._service.delete(id).then(() => {
+                    this._service.all().then((pictures) => {
                         this._pictures = pictures;
                         this.reloadView();
-                    })
+                    });
                 });
             })
 

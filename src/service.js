@@ -11,32 +11,40 @@ class ServiceMock {
         }];
     }
 
-    all(callback) {
-        callback(this._pictures);
-    }
-
-    add(pictureDto, callback) {
-        var fileReader = new FileReader();
-        fileReader.addEventListener('load', (event) => {
-            const picture = {
-                id: this._pictures.length + 1,
-                url: event.target.result
-            }
-
-            this._pictures.push(picture);
-            callback(picture);
+    all() {
+        return new Promise((resolve, reject) => {
+            resolve(this._pictures);
         });
-        fileReader.readAsDataURL(pictureDto.file);
     }
 
-    update(id, callback) {
-        callback();
+    add(pictureDto) {
+        return new Promise((resolve, reject) => {
+            var fileReader = new FileReader();
+            fileReader.addEventListener('load', (event) => {
+                const picture = {
+                    id: this._pictures.length + 1,
+                    url: event.target.result
+                }
+
+                this._pictures.push(picture);
+                resolve(picture);
+            });
+            fileReader.readAsDataURL(pictureDto.file);
+        });
+    }
+
+    update(id) {
+        return new Promise((resolve, reject) => {
+            resolve();
+        });
     }
 
     delete(id, callback) {
-        this._pictures = this._pictures.filter(function(picture) {
-            return picture.id != id;
+        return new Promise((resolve, reject) => {
+            this._pictures = this._pictures.filter(function(picture) {
+                return picture.id != id;
+            });
+            resolve();
         });
-        callback();
     }
 }
