@@ -33,9 +33,22 @@ class ServiceMock {
         });
     }
 
-    update(id) {
+    update(pictureDto) {
         return new Promise((resolve, reject) => {
-            resolve();
+            var fileReader = new FileReader();
+            fileReader.addEventListener('load', (event) => {
+                for (var i = 0; i < this._pictures.length; i++) {
+                    let picture = this._pictures[i];
+                    if (picture.id == pictureDto.id) {
+                        this._pictures[i].url = event.target.result;
+                        resolve(picture);
+                        return;
+                    }
+                }
+
+                reject();
+            });
+            fileReader.readAsDataURL(pictureDto.file);
         });
     }
 

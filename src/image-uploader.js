@@ -15,6 +15,7 @@ class ImageUploader {
             this._pictures = pictures;
             this.reloadView();
         });
+        this._currentId = null;
     }
 
     uploadFile(event) {
@@ -26,10 +27,20 @@ class ImageUploader {
 
         if (this.options.cropper) {
             this.modal = new CropperModal(file, (data) => {
-                this.addPicture(file, data);
+                if (this._currentId == null) {
+                    this.addPicture(file, data);
+                } else {
+                    this.updatePicture(this._currentId, file, data);
+                    this._currentId = null;
+                }
             });
         } else {
-            this.addPicture(file);
+            if (this._currentId == null) {
+                this.addPicture(file);
+            } else {
+                this.updatePicture(this._currentId, file);
+                this._currentId = null;
+            }
         }
     }
 
@@ -40,6 +51,17 @@ class ImageUploader {
         }
         this._service.add(pictureDto).then((picture) => {
             this._pictures.push(picture);
+            this.reloadView();
+        });
+    }
+
+    updatePicture(id, file, crop) {
+        var pictureDto = {
+            id: id,
+            file: file,
+            crop: crop,
+        }
+        this._service.update(pictureDto).then((picture) => {
             this.reloadView();
         });
     }
@@ -73,10 +95,12 @@ class ImageUploader {
 
             let dropmic = new Dropmic(span);
             dropmic.addBtn('Modifier', () => {
-                var id = dropmic.target.getAttribute('data-dropmic');
+                this._currentId = dropmic.target.getAttribute('data-dropmic');
+                this._fileInput.click();
             })
 
             dropmic.addBtn('Supprimer', () => {
+                this._currentId = null;
                 var id = dropmic.target.getAttribute('data-dropmic');
                 this._service.delete(id).then(() => {
                     this._service.all().then((pictures) => {

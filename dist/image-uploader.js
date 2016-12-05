@@ -76,6 +76,7 @@ var ImageUploader = function () {
             _this2._pictures = pictures;
             _this2.reloadView();
         });
+        this._currentId = null;
     }
 
     _createClass(ImageUploader, [{
@@ -91,10 +92,20 @@ var ImageUploader = function () {
 
             if (this.options.cropper) {
                 this.modal = new CropperModal(file, function (data) {
-                    _this3.addPicture(file, data);
+                    if (_this3._currentId == null) {
+                        _this3.addPicture(file, data);
+                    } else {
+                        _this3.updatePicture(_this3._currentId, file, data);
+                        _this3._currentId = null;
+                    }
                 });
             } else {
-                this.addPicture(file);
+                if (this._currentId == null) {
+                    this.addPicture(file);
+                } else {
+                    this.updatePicture(this._currentId, file);
+                    this._currentId = null;
+                }
             }
         }
     }, {
@@ -111,6 +122,20 @@ var ImageUploader = function () {
                 _this4.reloadView();
             });
         }
+    }, {
+        key: 'updatePicture',
+        value: function updatePicture(id, file, crop) {
+            var _this5 = this;
+
+            var pictureDto = {
+                id: id,
+                file: file,
+                crop: crop
+            };
+            this._service.update(pictureDto).then(function (picture) {
+                _this5.reloadView();
+            });
+        }
 
         /* view
         -------------------------------------------------------------- */
@@ -118,7 +143,7 @@ var ImageUploader = function () {
     }, {
         key: 'reloadView',
         value: function reloadView() {
-            var _this5 = this;
+            var _this6 = this;
 
             while (this.el.firstChild) {
                 this.el.removeChild(this.el.firstChild);
@@ -145,22 +170,24 @@ var ImageUploader = function () {
 
                 var dropmic = new Dropmic(span);
                 dropmic.addBtn('Modifier', function () {
-                    var id = dropmic.target.getAttribute('data-dropmic');
+                    _this6._currentId = dropmic.target.getAttribute('data-dropmic');
+                    _this6._fileInput.click();
                 });
 
                 dropmic.addBtn('Supprimer', function () {
+                    _this6._currentId = null;
                     var id = dropmic.target.getAttribute('data-dropmic');
-                    _this5._service.delete(id).then(function () {
-                        _this5._service.all().then(function (pictures) {
-                            _this5._pictures = pictures;
-                            _this5.reloadView();
+                    _this6._service.delete(id).then(function () {
+                        _this6._service.all().then(function (pictures) {
+                            _this6._pictures = pictures;
+                            _this6.reloadView();
                         });
                     });
                 });
 
                 div.appendChild(img);
 
-                _this5.el.appendChild(div);
+                _this6.el.appendChild(div);
             });
 
             this.initAddView();
@@ -168,18 +195,18 @@ var ImageUploader = function () {
     }, {
         key: 'initAddView',
         value: function initAddView() {
-            var _this6 = this;
+            var _this7 = this;
 
             this._fileInput = createElement('input', {
                 type: 'file'
             });
             this._fileInput.addEventListener('change', function (event) {
-                _this6.uploadFile(event);
+                _this7.uploadFile(event);
             });
 
             var div = document.createElement('div');
             div.addEventListener('click', function (event) {
-                _this6._fileInput.click();
+                _this7._fileInput.click();
             });
 
             div.appendChild(this._fileInput);
@@ -227,26 +254,26 @@ var ServiceMock = function () {
     _createClass(ServiceMock, [{
         key: 'all',
         value: function all() {
-            var _this7 = this;
+            var _this8 = this;
 
             return new Promise(function (resolve, reject) {
-                resolve(_this7._pictures);
+                resolve(_this8._pictures);
             });
         }
     }, {
         key: 'add',
         value: function add(pictureDto) {
-            var _this8 = this;
+            var _this9 = this;
 
             return new Promise(function (resolve, reject) {
                 var fileReader = new FileReader();
                 fileReader.addEventListener('load', function (event) {
                     var picture = {
-                        id: _this8._pictures.length + 1,
+                        id: _this9._pictures.length + 1,
                         url: event.target.result
                     };
 
-                    _this8._pictures.push(picture);
+                    _this9._pictures.push(picture);
                     resolve(picture);
                 });
                 fileReader.readAsDataURL(pictureDto.file);
@@ -254,18 +281,33 @@ var ServiceMock = function () {
         }
     }, {
         key: 'update',
-        value: function update(id) {
+        value: function update(pictureDto) {
+            var _this10 = this;
+
             return new Promise(function (resolve, reject) {
-                resolve();
+                var fileReader = new FileReader();
+                fileReader.addEventListener('load', function (event) {
+                    for (var i = 0; i < _this10._pictures.length; i++) {
+                        var picture = _this10._pictures[i];
+                        if (picture.id == pictureDto.id) {
+                            _this10._pictures[i].url = event.target.result;
+                            resolve(picture);
+                            return;
+                        }
+                    }
+
+                    reject();
+                });
+                fileReader.readAsDataURL(pictureDto.file);
             });
         }
     }, {
         key: 'delete',
         value: function _delete(id, callback) {
-            var _this9 = this;
+            var _this11 = this;
 
             return new Promise(function (resolve, reject) {
-                _this9._pictures = _this9._pictures.filter(function (picture) {
+                _this11._pictures = _this11._pictures.filter(function (picture) {
                     return picture.id != id;
                 });
                 resolve();
