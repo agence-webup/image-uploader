@@ -39,6 +39,12 @@ const ImageUploader = (function() {
     let _options = Symbol();
 
     /**
+     * add view
+     * @type {Element}
+     */
+    let _addView = Symbol();
+
+    /**
      * ImageUploader
      */
     class ImageUploader {
@@ -51,7 +57,7 @@ const ImageUploader = (function() {
             this[_options] = Object.assign({}, defaults, options);
             this[_pictures] = [];
             this[_pictureViews] = [];
-            this[_service] = this[_options].service == null ? new ServiceMock() : this[_options].service;
+            this[_service] = this[_options].service == null ? new MockService() : this[_options].service;
             this[_editIndex] = null;
 
             this[_service].all().then((pictures) => {
@@ -78,7 +84,7 @@ const ImageUploader = (function() {
             const length = this[_pictureViews].length;
             const view = makePictureView.bind(this)(picture, length);
 
-            this.el.insertBefore(view, this[_pictureViews][length - 1].nextSibling);
+            this.el.insertBefore(view, this[_addView]);
 
             this[_pictures].push(picture);
             this[_pictureViews].push(view);
@@ -93,7 +99,7 @@ const ImageUploader = (function() {
      */
     function updatePicture(index, file, crop) {
         var pictureDto = {
-            id: this[_pictures][index].id,
+            picture: this[_pictures][index],
             file: file,
             crop: crop,
         }
@@ -109,7 +115,7 @@ const ImageUploader = (function() {
      */
     function removePicture(index) {
         const picture = this[_pictures][index];
-        this[_service].delete(picture.id).then(() => {
+        this[_service].delete(picture).then(() => {
             this.el.removeChild(this[_pictureViews][index]);
             this[_pictures].splice(index, 1);
             this[_pictureViews].splice(index, 1);
@@ -173,7 +179,7 @@ const ImageUploader = (function() {
 
         let span = createElement('span', {
             class: 'dropmic',
-            'data-dropmic': picture.id,
+            'data-dropmic': index,
             'data-dropmic-direction': 'bottom-right'
         });
 
@@ -224,6 +230,7 @@ const ImageUploader = (function() {
         icon.innerHTML = 'add icon';
         div.appendChild(icon);
 
+        this[_addView] = div;
         this.el.appendChild(div);
     }
 

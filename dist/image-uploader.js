@@ -95,6 +95,12 @@ var ImageUploader = function () {
     var _options = Symbol();
 
     /**
+     * add view
+     * @type {Element}
+     */
+    var _addView = Symbol();
+
+    /**
      * ImageUploader
      */
 
@@ -113,7 +119,7 @@ var ImageUploader = function () {
         this[_options] = Object.assign({}, defaults, options);
         this[_pictures] = [];
         this[_pictureViews] = [];
-        this[_service] = this[_options].service == null ? new ServiceMock() : this[_options].service;
+        this[_service] = this[_options].service == null ? new MockService() : this[_options].service;
         this[_editIndex] = null;
 
         this[_service].all().then(function (pictures) {
@@ -143,7 +149,7 @@ var ImageUploader = function () {
             var length = _this3[_pictureViews].length;
             var view = makePictureView.bind(_this3)(picture, length);
 
-            _this3.el.insertBefore(view, _this3[_pictureViews][length - 1].nextSibling);
+            _this3.el.insertBefore(view, _this3[_addView]);
 
             _this3[_pictures].push(picture);
             _this3[_pictureViews].push(view);
@@ -160,7 +166,7 @@ var ImageUploader = function () {
         var _this4 = this;
 
         var pictureDto = {
-            id: this[_pictures][index].id,
+            picture: this[_pictures][index],
             file: file,
             crop: crop
         };
@@ -178,7 +184,7 @@ var ImageUploader = function () {
         var _this5 = this;
 
         var picture = this[_pictures][index];
-        this[_service].delete(picture.id).then(function () {
+        this[_service].delete(picture).then(function () {
             _this5.el.removeChild(_this5[_pictureViews][index]);
             _this5[_pictures].splice(index, 1);
             _this5[_pictureViews].splice(index, 1);
@@ -246,7 +252,7 @@ var ImageUploader = function () {
 
         var span = createElement('span', {
             class: 'dropmic',
-            'data-dropmic': picture.id,
+            'data-dropmic': index,
             'data-dropmic-direction': 'bottom-right'
         });
 
@@ -301,6 +307,7 @@ var ImageUploader = function () {
         icon.innerHTML = 'add icon';
         div.appendChild(icon);
 
+        this[_addView] = div;
         this.el.appendChild(div);
     }
 
@@ -323,26 +330,30 @@ function createElement(tagName) {
 
 "use strict";
 
-var ServiceMock = function () {
-    function ServiceMock() {
-        _classCallCheck(this, ServiceMock);
+var AjaxService = function () {
+    function AjaxService(url) {
+        _classCallCheck(this, AjaxService);
 
-        this._pictures = [{
-            id: 1,
-            url: "http://lorempixel.com/100/100/"
-        }, {
-            id: 2,
-            url: "http://lorempixel.com/100/100/"
-        }];
+        this.url = url;
     }
 
-    _createClass(ServiceMock, [{
+    _createClass(AjaxService, [{
         key: 'all',
         value: function all() {
             var _this10 = this;
 
             return new Promise(function (resolve, reject) {
-                resolve(_this10._pictures);
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', _this10.url, true);
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState == 4 && xhr.status == 200) {
+                        var data = JSON.parse(xhr.response);
+                        resolve(data);
+                    } else if (xhr.readyState == 4) {
+                        reject();
+                    }
+                };
+                xhr.send();
             });
         }
     }, {
@@ -351,17 +362,22 @@ var ServiceMock = function () {
             var _this11 = this;
 
             return new Promise(function (resolve, reject) {
-                var fileReader = new FileReader();
-                fileReader.addEventListener('load', function (event) {
-                    var picture = {
-                        id: _this11._pictures.length + 1,
-                        url: event.target.result
-                    };
+                var formdata = new FormData();
+                formdata.append('file', pictureDto.file);
+                formdata.append('crop', JSON.stringify(pictureDto.crop));
 
-                    _this11._pictures.push(picture);
-                    resolve(picture);
-                });
-                fileReader.readAsDataURL(pictureDto.file);
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', _this11.url, true);
+
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState == 4 && xhr.status == 200) {
+                        var data = JSON.parse(xhr.response);
+                        resolve(data);
+                    } else if (xhr.readyState == 4) {
+                        reject();
+                    }
+                };
+                xhr.send(formdata);
             });
         }
     }, {
@@ -370,12 +386,94 @@ var ServiceMock = function () {
             var _this12 = this;
 
             return new Promise(function (resolve, reject) {
+                var formdata = new FormData();
+                formdata.append('file', pictureDto.file);
+                formdata.append('crop', JSON.stringify(pictureDto.crop));
+
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', _this12.url + '/' + pictureDto.id, true);
+
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState == 4 && xhr.status == 200) {
+                        var data = JSON.parse(xhr.response);
+                        resolve(data);
+                    } else if (xhr.readyState == 4) {
+                        reject();
+                    }
+                };
+                xhr.send(formdata);
+            });
+        }
+    }, {
+        key: 'delete',
+        value: function _delete(id) {
+            var _this13 = this;
+
+            return new Promise(function (resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('DELETE', _this13.url + '/' + id, true);
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState == 4 && xhr.status == 200) {
+                        resolve();
+                    } else if (xhr.readyState == 4) {
+                        reject();
+                    }
+                };
+                xhr.send();
+            });
+        }
+    }]);
+
+    return AjaxService;
+}();
+
+var MockService = function () {
+    function MockService() {
+        _classCallCheck(this, MockService);
+
+        this._pictures = [];
+    }
+
+    _createClass(MockService, [{
+        key: 'all',
+        value: function all() {
+            var _this14 = this;
+
+            return new Promise(function (resolve, reject) {
+                resolve(_this14._pictures);
+            });
+        }
+    }, {
+        key: 'add',
+        value: function add(pictureDto) {
+            var _this15 = this;
+
+            return new Promise(function (resolve, reject) {
                 var fileReader = new FileReader();
                 fileReader.addEventListener('load', function (event) {
-                    for (var i = 0; i < _this12._pictures.length; i++) {
-                        var picture = _this12._pictures[i];
-                        if (picture.id == pictureDto.id) {
-                            _this12._pictures[i].url = event.target.result;
+                    var picture = {
+                        id: _this15._pictures.length + 1,
+                        url: event.target.result
+                    };
+
+                    _this15._pictures.push(picture);
+                    resolve(picture);
+                });
+                fileReader.readAsDataURL(pictureDto.file);
+            });
+        }
+    }, {
+        key: 'update',
+        value: function update(pictureDto) {
+            var _this16 = this;
+
+            return new Promise(function (resolve, reject) {
+                var fileReader = new FileReader();
+                fileReader.addEventListener('load', function (event) {
+                    for (var i = 0; i < _this16._pictures.length; i++) {
+                        var picture = _this16._pictures[i];
+                        if (picture.id == pictureDto.picture.id) {
+                            _this16._pictures[i].url = event.target.result;
                             resolve(picture);
                             return;
                         }
@@ -388,17 +486,17 @@ var ServiceMock = function () {
         }
     }, {
         key: 'delete',
-        value: function _delete(id, callback) {
-            var _this13 = this;
+        value: function _delete(picture, callback) {
+            var _this17 = this;
 
             return new Promise(function (resolve, reject) {
-                _this13._pictures = _this13._pictures.filter(function (picture) {
-                    return picture.id != id;
+                _this17._pictures = _this17._pictures.filter(function (_picture) {
+                    return _picture.id != picture.id;
                 });
                 resolve();
             });
         }
     }]);
 
-    return ServiceMock;
+    return MockService;
 }();

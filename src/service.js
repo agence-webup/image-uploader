@@ -1,14 +1,87 @@
 "use strict";
 
-class ServiceMock {
+class AjaxService {
+    constructor(url) {
+        this.url = url;
+    }
+
+    all() {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', this.url, true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    const data = JSON.parse(xhr.response);
+                    resolve(data);
+                } else if (xhr.readyState == 4) {
+                    reject();
+                }
+            };
+            xhr.send();
+        });
+    }
+
+    add(pictureDto) {
+        return new Promise((resolve, reject) => {
+            const formdata = new FormData();
+            formdata.append('file', pictureDto.file);
+            formdata.append('crop', JSON.stringify(pictureDto.crop));
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', this.url, true);
+
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    const data = JSON.parse(xhr.response);
+                    resolve(data);
+                } else if (xhr.readyState == 4) {
+                    reject();
+                }
+            };
+            xhr.send(formdata);
+        });
+    }
+
+    update(pictureDto) {
+        return new Promise((resolve, reject) => {
+            const formdata = new FormData();
+            formdata.append('file', pictureDto.file);
+            formdata.append('crop', JSON.stringify(pictureDto.crop));
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', this.url + '/' + pictureDto.id, true);
+
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    const data = JSON.parse(xhr.response);
+                    resolve(data);
+                } else if (xhr.readyState == 4) {
+                    reject();
+                }
+            };
+            xhr.send(formdata);
+        });
+    }
+
+    delete(id) {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('DELETE', this.url + '/' + id, true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    resolve();
+                } else if (xhr.readyState == 4) {
+                    reject();
+                }
+            };
+            xhr.send();
+        });
+    }
+}
+
+class MockService {
     constructor() {
-        this._pictures = [{
-            id: 1,
-            url: "http://lorempixel.com/100/100/",
-        }, {
-            id: 2,
-            url: "http://lorempixel.com/100/100/"
-        }];
+        this._pictures = [];
     }
 
     all() {
@@ -39,7 +112,7 @@ class ServiceMock {
             fileReader.addEventListener('load', (event) => {
                 for (var i = 0; i < this._pictures.length; i++) {
                     let picture = this._pictures[i];
-                    if (picture.id == pictureDto.id) {
+                    if (picture.id == pictureDto.picture.id) {
                         this._pictures[i].url = event.target.result;
                         resolve(picture);
                         return;
@@ -52,10 +125,10 @@ class ServiceMock {
         });
     }
 
-    delete(id, callback) {
+    delete(picture, callback) {
         return new Promise((resolve, reject) => {
-            this._pictures = this._pictures.filter(function(picture) {
-                return picture.id != id;
+            this._pictures = this._pictures.filter(function(_picture) {
+                return _picture.id != picture.id;
             });
             resolve();
         });
