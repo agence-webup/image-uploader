@@ -112,6 +112,8 @@ var ImageUploader = function () {
         _classCallCheck(this, ImageUploader);
 
         this.el = el;
+        this.label = el.dataset.label;
+
         var defaults = {
             cropper: false,
             service: null
@@ -245,27 +247,27 @@ var ImageUploader = function () {
     }
 
     function makePictureView(picture, index) {
-        var div = document.createElement('div');
-        var img = createElement('img', {
-            src: picture.url
+        var div = createElement('div', {
+            class: 'iu-item'
         });
 
+        div.style['background-image'] = 'url("' + picture.url + '")';
+
         var span = createElement('span', {
-            class: 'dropmic',
+            class: 'dropmic iu-item__action',
             'data-dropmic': index,
-            'data-dropmic-direction': 'bottom-right'
+            'data-dropmic-direction': 'bottom-middle'
         });
 
         var button = createElement('button', {
             'data-dropmic-btn': null
         });
+
         button.innerHTML = 'Actions';
         span.appendChild(button);
         div.appendChild(span);
 
         initDopmic.bind(this)(span, index);
-
-        div.appendChild(img);
 
         return div;
     }
@@ -292,22 +294,36 @@ var ImageUploader = function () {
         var _this9 = this;
 
         this._fileInput = createElement('input', {
-            type: 'file'
+            type: 'file',
+            class: 'iu-item__inputFile'
         });
+
+        this._label = createElement('label', {
+            class: 'iu-item__inputLabel'
+        });
+
+        this._fileInputWrapper = createElement('span', {
+            class: 'iu-item__inputWrapper'
+        });
+
+        this._label.innerHTML = this.label;
+
         this._fileInput.addEventListener('change', selectFile.bind(this));
 
-        var div = document.createElement('div');
+        var div = createElement('div', {
+            class: 'iu-item iu-item--input'
+        });
+
         div.addEventListener('click', function (event) {
             _this9._fileInput.click();
         });
 
         div.appendChild(this._fileInput);
-
-        var icon = document.createElement('i');
-        icon.innerHTML = 'add icon';
-        div.appendChild(icon);
+        div.appendChild(this._fileInputWrapper);
+        this._fileInputWrapper.appendChild(this._label);
 
         this[_addView] = div;
+
         this.el.appendChild(div);
     }
 

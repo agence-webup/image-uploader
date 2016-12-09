@@ -50,6 +50,8 @@ const ImageUploader = (function() {
     class ImageUploader {
         constructor(el, options = {}) {
             this.el = el;
+            this.label = el.dataset.label;
+
             const defaults = {
                 cropper: false,
                 service: null,
@@ -172,27 +174,28 @@ const ImageUploader = (function() {
     }
 
     function makePictureView(picture, index) {
-        let div = document.createElement('div');
-        let img = createElement('img', {
-            src: picture.url
+        let div = createElement('div', {
+            class: 'iu-item'
         });
 
+        div.style['background-image'] = 'url("' + picture.url + '")';
+
         let span = createElement('span', {
-            class: 'dropmic',
+            class: 'dropmic iu-item__action',
             'data-dropmic': index,
-            'data-dropmic-direction': 'bottom-right'
+            'data-dropmic-direction': 'bottom-middle'
         });
 
         let button = createElement('button', {
             'data-dropmic-btn': null
         });
+
         button.innerHTML = 'Actions';
         span.appendChild(button);
         div.appendChild(span);
 
         initDopmic.bind(this)(span, index);
 
-        div.appendChild(img);
 
         return div;
     }
@@ -216,21 +219,35 @@ const ImageUploader = (function() {
     function initAddView() {
         this._fileInput = createElement('input', {
             type: 'file',
+            class: 'iu-item__inputFile'
         });
+
+        this._label = createElement('label', {
+            class: 'iu-item__inputLabel'
+        });
+
+        this._fileInputWrapper = createElement('span', {
+            class: 'iu-item__inputWrapper'
+        });
+
+        this._label.innerHTML = this.label;
+
         this._fileInput.addEventListener('change', selectFile.bind(this));
 
-        let div = document.createElement('div');
+        let div = createElement('div', {
+            class:'iu-item iu-item--input'
+        });
+
         div.addEventListener('click', (event) => {
             this._fileInput.click();
         });
 
         div.appendChild(this._fileInput);
-
-        let icon = document.createElement('i');
-        icon.innerHTML = 'add icon';
-        div.appendChild(icon);
+        div.appendChild(this._fileInputWrapper)
+        this._fileInputWrapper.appendChild(this._label);
 
         this[_addView] = div;
+
         this.el.appendChild(div);
     }
 
