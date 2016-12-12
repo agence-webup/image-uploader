@@ -16,21 +16,21 @@ const ImageUploader = (function() {
 
     /**
      * picture list
-     * @type {Array}
+     * @type {Object}
      */
     let _pictures = Symbol();
 
     /**
      * picture view list
-     * @type {Array}
+     * @type {Object}
      */
     let _pictureViews = Symbol();
 
     /**
-     * index of current edited picture
-     * @type {?int}
+     * ID of current edited picture
+     * @type {?mixed}
      */
-    let _editIndex = Symbol();
+    let _editId = Symbol();
 
     /**
      * options
@@ -57,13 +57,15 @@ const ImageUploader = (function() {
                 service: null,
             };
             this[_options] = Object.assign({}, defaults, options);
-            this[_pictures] = [];
-            this[_pictureViews] = [];
+            this[_pictures] = {};
+            this[_pictureViews] = {};
             this[_service] = this[_options].service == null ? new MockService() : this[_options].service;
-            this[_editIndex] = null;
+            this[_editId] = null;
 
             this[_service].all().then((pictures) => {
-                this[_pictures] = pictures;
+                pictures.forEach((picture) => {
+                    this[_pictures][picture.id] = picture;
+                });
                 initView.bind(this)();
             });
         }
@@ -84,43 +86,42 @@ const ImageUploader = (function() {
         }
         this[_service].add(pictureDto).then((picture) => {
             const length = this[_pictureViews].length;
-            const view = makePictureView.bind(this)(picture, length);
+            const view = makePictureView.bind(this)(picture);
 
             this.el.insertBefore(view, this[_addView]);
 
-            this[_pictures].push(picture);
-            this[_pictureViews].push(view);
+            this[_pictures][picture.id] = picture;
+            this[_pictureViews][picture.id] = view;
         });
     }
 
     /**
-     * Update the picture at index
-     * @param  {int} index
+     * Update the picture with ID
+     * @param  {mixed} id
      * @param  {File} file
      * @param  {?Object} crop
      */
-    function updatePicture(index, file, crop) {
+    function updatePicture(id, file, crop) {
         var pictureDto = {
-            picture: this[_pictures][index],
+            id: id,
             file: file,
             crop: crop,
         }
         this[_service].update(pictureDto).then((picture) => {
-            this[_pictureViews][index].style['background-image'] = 'url("' + picture.url + '")';
-            this[_pictures][index] = picture;
+            this[_pictureViews][picture.id].style['background-image'] = 'url("' + picture.url + '")';
+            this[_pictures][picture.id] = picture;
         });
     }
 
     /**
-     * Remove the picture at index
-     * @param  {int} index
+     * Remove the picture with ID
+     * @param  {mixed} id
      */
-    function removePicture(index) {
-        const picture = this[_pictures][index];
-        this[_service].delete(picture).then(() => {
-            this.el.removeChild(this[_pictureViews][index]);
-            this[_pictures].splice(index, 1);
-            this[_pictureViews].splice(index, 1);
+    function removePicture(id) {
+        this[_service].delete(id).then(() => {
+            this.el.removeChild(this[_pictureViews][id]);
+            delete this[_pictures][id];
+            delete this[_pictureViews][id];
         });
     }
 
@@ -137,26 +138,26 @@ const ImageUploader = (function() {
 
         if (this[_options].cropper) {
             this.modal = new CropperModal(file, (data) => {
-                uploadFile.bind(this)(this[_editIndex], file, data);
-                this[_editIndex] = null;
+                uploadFile.bind(this)(this[_editId], file, data);
+                this[_editId] = null;
             });
         } else {
-            uploadFile.bind(this)(this[_editIndex], file);
-            this[_editIndex] = null;
+            uploadFile.bind(this)(this[_editId], file);
+            this[_editId] = null;
         }
     }
 
     /**
      * Add or update picture
-     * @param  {?int} index if null add else update
+     * @param  {?mixed} id if null add else update
      * @param  {File} file
      * @param  {?Object} crop
      */
-    function uploadFile(index, file, crop) {
-        if (index === null) {
+    function uploadFile(id, file, crop) {
+        if (id === null) {
             addPicture.bind(this)(file, crop);
         } else {
-            updatePicture.bind(this)(index, file, crop);
+            updatePicture.bind(this)(id, file, crop);
         }
     }
 
@@ -173,16 +174,17 @@ const ImageUploader = (function() {
      * Init view
      */
     function initView() {
-        this[_pictures].forEach((picture, index) => {
-            const view = makePictureView.bind(this)(picture, index);
+        for (let key in this[_pictures]) {
+            let picture = this[_pictures][key];
+            let view = makePictureView.bind(this)(picture);
             this.el.appendChild(view);
-            this[_pictureViews].push(view);
-        });
+            this[_pictureViews][picture.id] = view;
+        }
 
         initAddView.bind(this)();
     }
 
-    function makePictureView(picture, index) {
+    function makePictureView(picture) {
         let div = createElement('div', {
             class: 'iu-item ui-item__sortable',
             draggable: 'true',
@@ -193,8 +195,8 @@ const ImageUploader = (function() {
 
         let span = createElement('span', {
             class: 'dropmic iu-item__action',
-            'data-dropmic': index,
-            'data-dropmic-direction': 'bottom-middle'
+            'data-dropmic': picture.id,
+            'data-dropmic-direction': 'bottom-middle',
         });
 
         let button = createElement('button', {
@@ -205,23 +207,28 @@ const ImageUploader = (function() {
         span.appendChild(button);
         div.appendChild(span);
 
-        initDopmic.bind(this)(span, index);
+        initDopmic.bind(this)(span, picture.id);
 
         sortable(div, sortPicture.bind(this));
 
         return div;
     }
 
-    function initDopmic(el, index) {
+    /**
+     * Init dropmic for actions on picture element
+     * @param  {Element} el Picture element
+     * @param  {mixed} id Picture ID
+     */
+    function initDopmic(el, id) {
         let dropmic = new Dropmic(el);
 
         dropmic.addBtn('Modifier', () => {
-            this[_editIndex] = index;
+            this[_editId] = id;
             this._fileInput.click();
         });
 
         dropmic.addBtn('Supprimer', () => {
-            removePicture.bind(this)(index);
+            removePicture.bind(this)(id);
         });
     }
 

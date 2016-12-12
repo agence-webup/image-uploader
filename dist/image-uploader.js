@@ -72,21 +72,21 @@ var ImageUploader = function () {
 
     /**
      * picture list
-     * @type {Array}
+     * @type {Object}
      */
     var _pictures = Symbol();
 
     /**
      * picture view list
-     * @type {Array}
+     * @type {Object}
      */
     var _pictureViews = Symbol();
 
     /**
-     * index of current edited picture
-     * @type {?int}
+     * ID of current edited picture
+     * @type {?mixed}
      */
-    var _editIndex = Symbol();
+    var _editId = Symbol();
 
     /**
      * options
@@ -119,13 +119,15 @@ var ImageUploader = function () {
             service: null
         };
         this[_options] = Object.assign({}, defaults, options);
-        this[_pictures] = [];
-        this[_pictureViews] = [];
+        this[_pictures] = {};
+        this[_pictureViews] = {};
         this[_service] = this[_options].service == null ? new MockService() : this[_options].service;
-        this[_editIndex] = null;
+        this[_editId] = null;
 
         this[_service].all().then(function (pictures) {
-            _this2[_pictures] = pictures;
+            pictures.forEach(function (picture) {
+                _this2[_pictures][picture.id] = picture;
+            });
             initView.bind(_this2)();
         });
     };
@@ -149,47 +151,46 @@ var ImageUploader = function () {
         };
         this[_service].add(pictureDto).then(function (picture) {
             var length = _this3[_pictureViews].length;
-            var view = makePictureView.bind(_this3)(picture, length);
+            var view = makePictureView.bind(_this3)(picture);
 
             _this3.el.insertBefore(view, _this3[_addView]);
 
-            _this3[_pictures].push(picture);
-            _this3[_pictureViews].push(view);
+            _this3[_pictures][picture.id] = picture;
+            _this3[_pictureViews][picture.id] = view;
         });
     }
 
     /**
-     * Update the picture at index
-     * @param  {int} index
+     * Update the picture with ID
+     * @param  {mixed} id
      * @param  {File} file
      * @param  {?Object} crop
      */
-    function updatePicture(index, file, crop) {
+    function updatePicture(id, file, crop) {
         var _this4 = this;
 
         var pictureDto = {
-            picture: this[_pictures][index],
+            id: id,
             file: file,
             crop: crop
         };
         this[_service].update(pictureDto).then(function (picture) {
-            _this4[_pictureViews][index].style['background-image'] = 'url("' + picture.url + '")';
-            _this4[_pictures][index] = picture;
+            _this4[_pictureViews][picture.id].style['background-image'] = 'url("' + picture.url + '")';
+            _this4[_pictures][picture.id] = picture;
         });
     }
 
     /**
-     * Remove the picture at index
-     * @param  {int} index
+     * Remove the picture with ID
+     * @param  {mixed} id
      */
-    function removePicture(index) {
+    function removePicture(id) {
         var _this5 = this;
 
-        var picture = this[_pictures][index];
-        this[_service].delete(picture).then(function () {
-            _this5.el.removeChild(_this5[_pictureViews][index]);
-            _this5[_pictures].splice(index, 1);
-            _this5[_pictureViews].splice(index, 1);
+        this[_service].delete(id).then(function () {
+            _this5.el.removeChild(_this5[_pictureViews][id]);
+            delete _this5[_pictures][id];
+            delete _this5[_pictureViews][id];
         });
     }
 
@@ -208,26 +209,26 @@ var ImageUploader = function () {
 
         if (this[_options].cropper) {
             this.modal = new CropperModal(file, function (data) {
-                uploadFile.bind(_this6)(_this6[_editIndex], file, data);
-                _this6[_editIndex] = null;
+                uploadFile.bind(_this6)(_this6[_editId], file, data);
+                _this6[_editId] = null;
             });
         } else {
-            uploadFile.bind(this)(this[_editIndex], file);
-            this[_editIndex] = null;
+            uploadFile.bind(this)(this[_editId], file);
+            this[_editId] = null;
         }
     }
 
     /**
      * Add or update picture
-     * @param  {?int} index if null add else update
+     * @param  {?mixed} id if null add else update
      * @param  {File} file
      * @param  {?Object} crop
      */
-    function uploadFile(index, file, crop) {
-        if (index === null) {
+    function uploadFile(id, file, crop) {
+        if (id === null) {
             addPicture.bind(this)(file, crop);
         } else {
-            updatePicture.bind(this)(index, file, crop);
+            updatePicture.bind(this)(id, file, crop);
         }
     }
 
@@ -244,18 +245,17 @@ var ImageUploader = function () {
      * Init view
      */
     function initView() {
-        var _this7 = this;
-
-        this[_pictures].forEach(function (picture, index) {
-            var view = makePictureView.bind(_this7)(picture, index);
-            _this7.el.appendChild(view);
-            _this7[_pictureViews].push(view);
-        });
+        for (var key in this[_pictures]) {
+            var picture = this[_pictures][key];
+            var view = makePictureView.bind(this)(picture);
+            this.el.appendChild(view);
+            this[_pictureViews][picture.id] = view;
+        }
 
         initAddView.bind(this)();
     }
 
-    function makePictureView(picture, index) {
+    function makePictureView(picture) {
         var div = createElement('div', {
             class: 'iu-item ui-item__sortable',
             draggable: 'true',
@@ -266,7 +266,7 @@ var ImageUploader = function () {
 
         var span = createElement('span', {
             class: 'dropmic iu-item__action',
-            'data-dropmic': index,
+            'data-dropmic': picture.id,
             'data-dropmic-direction': 'bottom-middle'
         });
 
@@ -278,25 +278,30 @@ var ImageUploader = function () {
         span.appendChild(button);
         div.appendChild(span);
 
-        initDopmic.bind(this)(span, index);
+        initDopmic.bind(this)(span, picture.id);
 
         sortable(div, sortPicture.bind(this));
 
         return div;
     }
 
-    function initDopmic(el, index) {
-        var _this8 = this;
+    /**
+     * Init dropmic for actions on picture element
+     * @param  {Element} el Picture element
+     * @param  {mixed} id Picture ID
+     */
+    function initDopmic(el, id) {
+        var _this7 = this;
 
         var dropmic = new Dropmic(el);
 
         dropmic.addBtn('Modifier', function () {
-            _this8[_editIndex] = index;
-            _this8._fileInput.click();
+            _this7[_editId] = id;
+            _this7._fileInput.click();
         });
 
         dropmic.addBtn('Supprimer', function () {
-            removePicture.bind(_this8)(index);
+            removePicture.bind(_this7)(id);
         });
     }
 
@@ -304,7 +309,7 @@ var ImageUploader = function () {
      * Init add View
      */
     function initAddView() {
-        var _this9 = this;
+        var _this8 = this;
 
         this._fileInput = createElement('input', {
             type: 'file',
@@ -328,7 +333,7 @@ var ImageUploader = function () {
         });
 
         div.addEventListener('click', function (event) {
-            _this9._fileInput.click();
+            _this8._fileInput.click();
         });
 
         div.appendChild(this._fileInput);
@@ -371,11 +376,11 @@ var AjaxService = function () {
     _createClass(AjaxService, [{
         key: 'all',
         value: function all() {
-            var _this10 = this;
+            var _this9 = this;
 
             return new Promise(function (resolve, reject) {
                 var xhr = new XMLHttpRequest();
-                xhr.open('GET', _this10.url, true);
+                xhr.open('GET', _this9.url, true);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState == 4 && xhr.status == 200) {
                         var data = JSON.parse(xhr.response);
@@ -390,7 +395,7 @@ var AjaxService = function () {
     }, {
         key: 'add',
         value: function add(pictureDto) {
-            var _this11 = this;
+            var _this10 = this;
 
             return new Promise(function (resolve, reject) {
                 var formdata = new FormData();
@@ -398,7 +403,7 @@ var AjaxService = function () {
                 formdata.append('crop', JSON.stringify(pictureDto.crop));
 
                 var xhr = new XMLHttpRequest();
-                xhr.open('POST', _this11.url, true);
+                xhr.open('POST', _this10.url, true);
 
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState == 4 && xhr.status == 200) {
@@ -414,7 +419,7 @@ var AjaxService = function () {
     }, {
         key: 'update',
         value: function update(pictureDto) {
-            var _this12 = this;
+            var _this11 = this;
 
             return new Promise(function (resolve, reject) {
                 var formdata = new FormData();
@@ -422,7 +427,7 @@ var AjaxService = function () {
                 formdata.append('crop', JSON.stringify(pictureDto.crop));
 
                 var xhr = new XMLHttpRequest();
-                xhr.open('POST', _this12.url + '/' + pictureDto.id, true);
+                xhr.open('POST', _this11.url + '/' + pictureDto.id, true);
 
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState == 4 && xhr.status == 200) {
@@ -438,11 +443,11 @@ var AjaxService = function () {
     }, {
         key: 'delete',
         value: function _delete(id) {
-            var _this13 = this;
+            var _this12 = this;
 
             return new Promise(function (resolve, reject) {
                 var xhr = new XMLHttpRequest();
-                xhr.open('DELETE', _this13.url + '/' + id, true);
+                xhr.open('DELETE', _this12.url + '/' + id, true);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState == 4 && xhr.status == 200) {
                         resolve();
@@ -456,11 +461,11 @@ var AjaxService = function () {
     }, {
         key: 'sort',
         value: function sort(pictures) {
-            var _this14 = this;
+            var _this13 = this;
 
             return new Promise(function (resolve, reject) {
                 var xhr = new XMLHttpRequest();
-                xhr.open('POST', _this14.url + '/sort', true);
+                xhr.open('POST', _this13.url + '/sort', true);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState == 4 && xhr.status == 200) {
                         resolve();
@@ -487,26 +492,26 @@ var MockService = function () {
     _createClass(MockService, [{
         key: 'all',
         value: function all() {
-            var _this15 = this;
+            var _this14 = this;
 
             return new Promise(function (resolve, reject) {
-                resolve(_this15._pictures);
+                resolve(_this14._pictures);
             });
         }
     }, {
         key: 'add',
         value: function add(pictureDto) {
-            var _this16 = this;
+            var _this15 = this;
 
             return new Promise(function (resolve, reject) {
                 var fileReader = new FileReader();
                 fileReader.addEventListener('load', function (event) {
                     var picture = {
-                        id: _this16._pictures.length + 1,
+                        id: _this15._pictures.length + 1,
                         url: event.target.result
                     };
 
-                    _this16._pictures.push(picture);
+                    _this15._pictures.push(picture);
                     resolve(picture);
                 });
                 fileReader.readAsDataURL(pictureDto.file);
@@ -515,15 +520,15 @@ var MockService = function () {
     }, {
         key: 'update',
         value: function update(pictureDto) {
-            var _this17 = this;
+            var _this16 = this;
 
             return new Promise(function (resolve, reject) {
                 var fileReader = new FileReader();
                 fileReader.addEventListener('load', function (event) {
-                    for (var i = 0; i < _this17._pictures.length; i++) {
-                        var picture = _this17._pictures[i];
-                        if (picture.id == pictureDto.picture.id) {
-                            _this17._pictures[i].url = event.target.result;
+                    for (var i = 0; i < _this16._pictures.length; i++) {
+                        var picture = _this16._pictures[i];
+                        if (picture.id == pictureDto.id) {
+                            _this16._pictures[i].url = event.target.result;
                             resolve(picture);
                             return;
                         }
@@ -537,10 +542,10 @@ var MockService = function () {
     }, {
         key: 'delete',
         value: function _delete(picture) {
-            var _this18 = this;
+            var _this17 = this;
 
             return new Promise(function (resolve, reject) {
-                _this18._pictures = _this18._pictures.filter(function (_picture) {
+                _this17._pictures = _this17._pictures.filter(function (_picture) {
                     return _picture.id != picture.id;
                 });
                 resolve();

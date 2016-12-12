@@ -128,7 +128,7 @@ class MockService {
             fileReader.addEventListener('load', (event) => {
                 for (var i = 0; i < this._pictures.length; i++) {
                     let picture = this._pictures[i];
-                    if (picture.id == pictureDto.picture.id) {
+                    if (picture.id == pictureDto.id) {
                         this._pictures[i].url = event.target.result;
                         resolve(picture);
                         return;
