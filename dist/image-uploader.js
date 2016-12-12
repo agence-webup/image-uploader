@@ -231,6 +231,15 @@ var ImageUploader = function () {
         }
     }
 
+    function sortPicture() {
+        var pictures = [];
+        var els = this.el.querySelectorAll('[data-picture-id]');
+        [].forEach.call(els, function (el) {
+            pictures.push(el.getAttribute('data-picture-id'));
+        });
+        this[_service].sort(pictures);
+    }
+
     /**
      * Init view
      */
@@ -248,7 +257,9 @@ var ImageUploader = function () {
 
     function makePictureView(picture, index) {
         var div = createElement('div', {
-            class: 'iu-item'
+            class: 'iu-item ui-item__sortable',
+            draggable: 'true',
+            'data-picture-id': picture.id
         });
 
         div.style['background-image'] = 'url("' + picture.url + '")';
@@ -268,6 +279,8 @@ var ImageUploader = function () {
         div.appendChild(span);
 
         initDopmic.bind(this)(span, index);
+
+        sortable(div, sortPicture.bind(this));
 
         return div;
     }
@@ -311,7 +324,7 @@ var ImageUploader = function () {
         this._fileInput.addEventListener('change', selectFile.bind(this));
 
         var div = createElement('div', {
-            class: 'iu-item iu-item--input'
+            class: 'iu-item iu-item--input ui-item__sortable'
         });
 
         div.addEventListener('click', function (event) {
@@ -323,6 +336,8 @@ var ImageUploader = function () {
         this._fileInputWrapper.appendChild(this._label);
 
         this[_addView] = div;
+
+        sortable(div, sortPicture.bind(this));
 
         this.el.appendChild(div);
     }
@@ -438,6 +453,25 @@ var AjaxService = function () {
                 xhr.send();
             });
         }
+    }, {
+        key: 'sort',
+        value: function sort(pictures) {
+            var _this14 = this;
+
+            return new Promise(function (resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', _this14.url + '/sort', true);
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState == 4 && xhr.status == 200) {
+                        resolve();
+                    } else if (xhr.readyState == 4) {
+                        reject();
+                    }
+                };
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.send(JSON.stringify(pictures));
+            });
+        }
     }]);
 
     return AjaxService;
@@ -453,26 +487,26 @@ var MockService = function () {
     _createClass(MockService, [{
         key: 'all',
         value: function all() {
-            var _this14 = this;
+            var _this15 = this;
 
             return new Promise(function (resolve, reject) {
-                resolve(_this14._pictures);
+                resolve(_this15._pictures);
             });
         }
     }, {
         key: 'add',
         value: function add(pictureDto) {
-            var _this15 = this;
+            var _this16 = this;
 
             return new Promise(function (resolve, reject) {
                 var fileReader = new FileReader();
                 fileReader.addEventListener('load', function (event) {
                     var picture = {
-                        id: _this15._pictures.length + 1,
+                        id: _this16._pictures.length + 1,
                         url: event.target.result
                     };
 
-                    _this15._pictures.push(picture);
+                    _this16._pictures.push(picture);
                     resolve(picture);
                 });
                 fileReader.readAsDataURL(pictureDto.file);
@@ -481,15 +515,15 @@ var MockService = function () {
     }, {
         key: 'update',
         value: function update(pictureDto) {
-            var _this16 = this;
+            var _this17 = this;
 
             return new Promise(function (resolve, reject) {
                 var fileReader = new FileReader();
                 fileReader.addEventListener('load', function (event) {
-                    for (var i = 0; i < _this16._pictures.length; i++) {
-                        var picture = _this16._pictures[i];
+                    for (var i = 0; i < _this17._pictures.length; i++) {
+                        var picture = _this17._pictures[i];
                         if (picture.id == pictureDto.picture.id) {
-                            _this16._pictures[i].url = event.target.result;
+                            _this17._pictures[i].url = event.target.result;
                             resolve(picture);
                             return;
                         }
@@ -502,17 +536,90 @@ var MockService = function () {
         }
     }, {
         key: 'delete',
-        value: function _delete(picture, callback) {
-            var _this17 = this;
+        value: function _delete(picture) {
+            var _this18 = this;
 
             return new Promise(function (resolve, reject) {
-                _this17._pictures = _this17._pictures.filter(function (_picture) {
+                _this18._pictures = _this18._pictures.filter(function (_picture) {
                     return _picture.id != picture.id;
                 });
+                resolve();
+            });
+        }
+    }, {
+        key: 'sort',
+        value: function sort(pictures) {
+            return new Promise(function (resolve, reject) {
                 resolve();
             });
         }
     }]);
 
     return MockService;
+}();
+
+var sortable = function () {
+
+    var dragSrcEl = null;
+    var callback = null;
+    var DRAG_CLASS = 'ui-item__sortableDrag';
+    var OVER_CLASS = 'ui-item__sortableOver';
+
+    function handleDragStart(e) {
+        dragSrcEl = this;
+
+        e.dataTransfer.effectAllowed = 'move';
+
+        this.classList.add(DRAG_CLASS);
+    }
+
+    function handleDragOver(e) {
+        if (e.preventDefault) {
+            e.preventDefault(); // Necessary. Allows us to drop.
+        }
+        this.classList.add(OVER_CLASS);
+
+        e.dataTransfer.dropEffect = 'move';
+
+        return false;
+    }
+
+    function handleDragEnter(e) {}
+
+    function handleDragLeave(e) {
+        this.classList.remove(OVER_CLASS);
+    }
+
+    function handleDrop(e) {
+        if (e.stopPropagation) {
+            e.stopPropagation(); // Stops some browsers from redirecting.
+        }
+
+        // Don't do anything if dropping the same column we're dragging.
+        if (dragSrcEl != this) {
+            this.parentNode.insertBefore(dragSrcEl, this);
+            callback();
+        }
+        this.classList.remove(OVER_CLASS);
+
+        return false;
+    }
+
+    function handleDragEnd(e) {
+        this.classList.remove(DRAG_CLASS);
+    }
+
+    function addDnDHandlers(el) {
+        el.addEventListener('dragstart', handleDragStart, false);
+        el.addEventListener('dragenter', handleDragEnter, false);
+        el.addEventListener('dragover', handleDragOver, false);
+        el.addEventListener('dragleave', handleDragLeave, false);
+        el.addEventListener('drop', handleDrop, false);
+        el.addEventListener('dragend', handleDragEnd, false);
+    }
+
+    return function (el, cb) {
+        callback = cb;
+        addDnDHandlers(el);
+    };
 }();

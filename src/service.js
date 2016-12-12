@@ -77,6 +77,22 @@ class AjaxService {
             xhr.send();
         });
     }
+
+    sort(pictures) {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', this.url + '/sort', true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    resolve();
+                } else if (xhr.readyState == 4) {
+                    reject();
+                }
+            };
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.send(JSON.stringify(pictures));
+        });
+    }
 }
 
 class MockService {
@@ -125,11 +141,17 @@ class MockService {
         });
     }
 
-    delete(picture, callback) {
+    delete(picture) {
         return new Promise((resolve, reject) => {
             this._pictures = this._pictures.filter(function(_picture) {
                 return _picture.id != picture.id;
             });
+            resolve();
+        });
+    }
+
+    sort(pictures) {
+        return new Promise((resolve, reject) => {
             resolve();
         });
     }

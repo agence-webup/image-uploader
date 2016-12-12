@@ -160,6 +160,15 @@ const ImageUploader = (function() {
         }
     }
 
+    function sortPicture() {
+        const pictures = [];
+        const els = this.el.querySelectorAll('[data-picture-id]');
+        [].forEach.call(els, function(el) {
+            pictures.push(el.getAttribute('data-picture-id'));
+        })
+        this[_service].sort(pictures);
+    }
+
     /**
      * Init view
      */
@@ -175,7 +184,9 @@ const ImageUploader = (function() {
 
     function makePictureView(picture, index) {
         let div = createElement('div', {
-            class: 'iu-item'
+            class: 'iu-item ui-item__sortable',
+            draggable: 'true',
+            'data-picture-id': picture.id,
         });
 
         div.style['background-image'] = 'url("' + picture.url + '")';
@@ -196,6 +207,7 @@ const ImageUploader = (function() {
 
         initDopmic.bind(this)(span, index);
 
+        sortable(div, sortPicture.bind(this));
 
         return div;
     }
@@ -235,7 +247,7 @@ const ImageUploader = (function() {
         this._fileInput.addEventListener('change', selectFile.bind(this));
 
         let div = createElement('div', {
-            class: 'iu-item iu-item--input'
+            class: 'iu-item iu-item--input ui-item__sortable'
         });
 
         div.addEventListener('click', (event) => {
@@ -247,6 +259,8 @@ const ImageUploader = (function() {
         this._fileInputWrapper.appendChild(this._label);
 
         this[_addView] = div;
+
+        sortable(div, sortPicture.bind(this));
 
         this.el.appendChild(div);
     }
