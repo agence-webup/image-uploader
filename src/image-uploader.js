@@ -106,7 +106,7 @@ const ImageUploader = (function() {
             crop: crop,
         }
         this[_service].update(pictureDto).then((picture) => {
-            this[_pictureViews][index].querySelector('img').setAttribute('src', picture.url);
+            this[_pictureViews][index].style['background-image'] = 'url("' + picture.url + '")';
             this[_pictures][index] = picture;
         });
     }
@@ -235,7 +235,7 @@ const ImageUploader = (function() {
         this._fileInput.addEventListener('change', selectFile.bind(this));
 
         let div = createElement('div', {
-            class:'iu-item iu-item--input'
+            class: 'iu-item iu-item--input'
         });
 
         div.addEventListener('click', (event) => {

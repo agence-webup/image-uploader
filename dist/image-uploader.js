@@ -173,7 +173,7 @@ var ImageUploader = function () {
             crop: crop
         };
         this[_service].update(pictureDto).then(function (picture) {
-            _this4[_pictureViews][index].querySelector('img').setAttribute('src', picture.url);
+            _this4[_pictureViews][index].style['background-image'] = 'url("' + picture.url + '")';
             _this4[_pictures][index] = picture;
         });
     }
