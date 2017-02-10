@@ -1,6 +1,6 @@
 {
-  "name": "image-uploader",
-  "version": "1.0.0",
+  "name": "image-crop-upload",
+  "version": "0.0.1",
   "description": "Image uploader plugin",
   "main": "dist/image-uploader.js",
   "scripts": {
