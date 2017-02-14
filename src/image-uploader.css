@@ -47,6 +47,10 @@
   cursor: pointer;
 }
 
+.ui-hidden {
+  display: none;
+}
+
 /* input file
 -------------------------------------------------------------- */
 

@@ -5,7 +5,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var CropperModal = function () {
-    function CropperModal(file, callback) {
+    function CropperModal(file, options, callback) {
         var _this = this;
 
         _classCallCheck(this, CropperModal);
@@ -32,16 +32,9 @@ var CropperModal = function () {
 
         this.modal.open();
 
-        this.cropper = new Cropper(this.cropperEl, {
-            // cropBoxResizable: false,
-            autoCropArea: 1,
-            // zoomable: false,
-            aspectRatio: 1
-        });
+        this.cropper = new Cropper(this.cropperEl, options);
 
         this.cropper.replace(URL.createObjectURL(file));
-
-        this.modal.resize();
     }
 
     _createClass(CropperModal, [{
@@ -116,7 +109,10 @@ var ImageUploader = function () {
 
         var defaults = {
             cropper: false,
-            service: null
+            cropperOptions: {},
+            max: 0,
+            service: null,
+            sortable: false
         };
         this[_options] = Object.assign({}, defaults, options);
         this[_pictures] = {};
@@ -157,6 +153,10 @@ var ImageUploader = function () {
 
             _this3[_pictures][picture.id] = picture;
             _this3[_pictureViews][picture.id] = view;
+
+            if (_this3[_options].max && Object.keys(_this3[_pictures]).length >= _this3[_options].max) {
+                _this3[_addView].classList.add('ui-hidden');
+            }
         });
     }
 
@@ -191,6 +191,10 @@ var ImageUploader = function () {
             _this5.el.removeChild(_this5[_pictureViews][id]);
             delete _this5[_pictures][id];
             delete _this5[_pictureViews][id];
+
+            if (_this5[_options].max && Object.keys(_this5[_pictures]).length < _this5[_options].max) {
+                _this5[_addView].classList.remove('ui-hidden');
+            }
         });
     }
 
@@ -208,7 +212,7 @@ var ImageUploader = function () {
         var file = fileInput.files[0];
 
         if (this[_options].cropper) {
-            this.modal = new CropperModal(file, function (data) {
+            this.modal = new CropperModal(file, this[_options].cropperOptions, function (data) {
                 uploadFile.bind(_this6)(_this6[_editId], file, data);
                 _this6[_editId] = null;
             });
@@ -280,7 +284,9 @@ var ImageUploader = function () {
 
         initDopmic.bind(this)(span, picture.id);
 
-        sortable(div, sortPicture.bind(this));
+        if (this[_options].sortable) {
+            sortable(div, sortPicture.bind(this));
+        }
 
         return div;
     }
@@ -342,7 +348,13 @@ var ImageUploader = function () {
 
         this[_addView] = div;
 
-        sortable(div, sortPicture.bind(this));
+        if (this[_options].max && Object.keys(this[_pictures]).length >= this[_options].max) {
+            this[_addView].classList.add('hidden');
+        }
+
+        if (this[_options].sortable) {
+            sortable(div, sortPicture.bind(this));
+        }
 
         this.el.appendChild(div);
     }

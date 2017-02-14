@@ -54,7 +54,10 @@ const ImageUploader = (function() {
 
             const defaults = {
                 cropper: false,
+                cropperOptions: {},
+                max: 0,
                 service: null,
+                sortable: false,
             };
             this[_options] = Object.assign({}, defaults, options);
             this[_pictures] = {};
@@ -92,6 +95,10 @@ const ImageUploader = (function() {
 
             this[_pictures][picture.id] = picture;
             this[_pictureViews][picture.id] = view;
+
+            if (this[_options].max && Object.keys(this[_pictures]).length >= this[_options].max) {
+                this[_addView].classList.add('ui-hidden');
+            }
         });
     }
 
@@ -122,6 +129,10 @@ const ImageUploader = (function() {
             this.el.removeChild(this[_pictureViews][id]);
             delete this[_pictures][id];
             delete this[_pictureViews][id];
+
+            if (this[_options].max && Object.keys(this[_pictures]).length < this[_options].max) {
+                this[_addView].classList.remove('ui-hidden');
+            }
         });
     }
 
@@ -137,7 +148,7 @@ const ImageUploader = (function() {
         const file = fileInput.files[0];
 
         if (this[_options].cropper) {
-            this.modal = new CropperModal(file, (data) => {
+            this.modal = new CropperModal(file, this[_options].cropperOptions, (data) => {
                 uploadFile.bind(this)(this[_editId], file, data);
                 this[_editId] = null;
             });
@@ -209,7 +220,9 @@ const ImageUploader = (function() {
 
         initDopmic.bind(this)(span, picture.id);
 
-        sortable(div, sortPicture.bind(this));
+        if (this[_options].sortable) {
+            sortable(div, sortPicture.bind(this));
+        }
 
         return div;
     }
@@ -267,7 +280,13 @@ const ImageUploader = (function() {
 
         this[_addView] = div;
 
-        sortable(div, sortPicture.bind(this));
+        if (this[_options].max && Object.keys(this[_pictures]).length >= this[_options].max) {
+            this[_addView].classList.add('hidden');
+        }
+
+        if (this[_options].sortable) {
+            sortable(div, sortPicture.bind(this));
+        }
 
         this.el.appendChild(div);
     }

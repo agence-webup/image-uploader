@@ -1,7 +1,7 @@
 "use strict";
 
 class CropperModal {
-    constructor(file, callback) {
+    constructor(file, options, callback) {
         this.modal = new tingle.modal({
             footer: true,
         });
@@ -24,16 +24,9 @@ class CropperModal {
 
         this.modal.open();
 
-        this.cropper = new Cropper(this.cropperEl, {
-            // cropBoxResizable: false,
-            autoCropArea: 1,
-            // zoomable: false,
-            aspectRatio: 1,
-        });
+        this.cropper = new Cropper(this.cropperEl, options);
 
         this.cropper.replace(URL.createObjectURL(file));
-
-        this.modal.resize();
     }
 
     rotate(angle) {
