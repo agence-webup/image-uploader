@@ -11,7 +11,11 @@ var CropperModal = function () {
         _classCallCheck(this, CropperModal);
 
         this.modal = new tingle.modal({
-            footer: true
+            footer: true,
+            onOpen: function onOpen() {
+                _this.cropper = new Cropper(_this.cropperEl, options);
+                _this.cropper.replace(URL.createObjectURL(file));
+            }
         });
 
         this.modal.addFooterBtn('Turn left', 'tingle-btn tingle-btn--primary', function () {
@@ -27,14 +31,14 @@ var CropperModal = function () {
             _this.modal.close();
         });
 
-        this.cropperEl = document.createElement('div');
-        this.modal.setContent(this.cropperEl);
+        var content = document.createElement('div');
+
+        this.cropperEl = document.createElement('img');
+        content.appendChild(this.cropperEl);
+
+        this.modal.setContent(content);
 
         this.modal.open();
-
-        this.cropper = new Cropper(this.cropperEl, options);
-
-        this.cropper.replace(URL.createObjectURL(file));
     }
 
     _createClass(CropperModal, [{

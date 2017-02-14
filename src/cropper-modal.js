@@ -4,6 +4,10 @@ class CropperModal {
     constructor(file, options, callback) {
         this.modal = new tingle.modal({
             footer: true,
+            onOpen: () => {
+                this.cropper = new Cropper(this.cropperEl, options);
+                this.cropper.replace(URL.createObjectURL(file));
+            }
         });
 
         this.modal.addFooterBtn('Turn left', 'tingle-btn tingle-btn--primary', () => {
@@ -19,14 +23,14 @@ class CropperModal {
             this.modal.close();
         });
 
-        this.cropperEl = document.createElement('div');
-        this.modal.setContent(this.cropperEl);
+        const content = document.createElement('div');
+
+        this.cropperEl = document.createElement('img');
+        content.appendChild(this.cropperEl);
+
+        this.modal.setContent(content);
 
         this.modal.open();
-
-        this.cropper = new Cropper(this.cropperEl, options);
-
-        this.cropper.replace(URL.createObjectURL(file));
     }
 
     rotate(angle) {
