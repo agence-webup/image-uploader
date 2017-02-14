@@ -235,12 +235,14 @@ const ImageUploader = (function() {
     function initDopmic(el, id) {
         let dropmic = new Dropmic(el);
 
-        dropmic.addBtn('Modifier', () => {
+        dropmic.addBtn('Modifier', (event) => {
+            event.preventDefault();
             this[_editId] = id;
             this._fileInput.click();
         });
 
-        dropmic.addBtn('Supprimer', () => {
+        dropmic.addBtn('Supprimer', (event) => {
+            event.preventDefault();
             removePicture.bind(this)(id);
         });
     }

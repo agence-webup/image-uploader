@@ -305,12 +305,14 @@ var ImageUploader = function () {
 
         var dropmic = new Dropmic(el);
 
-        dropmic.addBtn('Modifier', function () {
+        dropmic.addBtn('Modifier', function (event) {
+            event.preventDefault();
             _this7[_editId] = id;
             _this7._fileInput.click();
         });
 
-        dropmic.addBtn('Supprimer', function () {
+        dropmic.addBtn('Supprimer', function (event) {
+            event.preventDefault();
             removePicture.bind(_this7)(id);
         });
     }
