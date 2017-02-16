@@ -58,6 +58,7 @@ const ImageUploader = (function() {
                 max: 0,
                 service: null,
                 sortable: false,
+                deletable: true,
             };
             this[_options] = Object.assign({}, defaults, options);
             this[_pictures] = {};
@@ -241,10 +242,12 @@ const ImageUploader = (function() {
             this._fileInput.click();
         });
 
-        dropmic.addBtn('Supprimer', (event) => {
-            event.preventDefault();
-            removePicture.bind(this)(id);
-        });
+        if (this[_options].deletable) {
+            dropmic.addBtn('Supprimer', (event) => {
+                event.preventDefault();
+                removePicture.bind(this)(id);
+            });
+        }
     }
 
     /**

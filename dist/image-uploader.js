@@ -116,7 +116,8 @@ var ImageUploader = function () {
             cropperOptions: {},
             max: 0,
             service: null,
-            sortable: false
+            sortable: false,
+            deletable: true
         };
         this[_options] = Object.assign({}, defaults, options);
         this[_pictures] = {};
@@ -311,10 +312,12 @@ var ImageUploader = function () {
             _this7._fileInput.click();
         });
 
-        dropmic.addBtn('Supprimer', function (event) {
-            event.preventDefault();
-            removePicture.bind(_this7)(id);
-        });
+        if (this[_options].deletable) {
+            dropmic.addBtn('Supprimer', function (event) {
+                event.preventDefault();
+                removePicture.bind(_this7)(id);
+            });
+        }
     }
 
     /**
