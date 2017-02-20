@@ -26,6 +26,14 @@ var CropperModal = function () {
             _this.rotate(90);
         });
 
+        this.modal.addFooterBtn('Zoom in', 'tingle-btn tingle-btn--primary', function () {
+            _this.cropper.zoom(0.1);
+        });
+
+        this.modal.addFooterBtn('Zoom out', 'tingle-btn tingle-btn--primary', function () {
+            _this.cropper.zoom(-0.1);
+        });
+
         this.modal.addFooterBtn('Valider', 'tingle-btn tingle-btn--primary', function () {
             callback(_this.cropper.getData());
             _this.modal.close();
@@ -113,7 +121,10 @@ var ImageUploader = function () {
 
         var defaults = {
             cropper: false,
-            cropperOptions: {},
+            cropperOptions: {
+                zoomOnTouch: false,
+                zoomOnWheel: false
+            },
             max: 0,
             service: null,
             sortable: false,

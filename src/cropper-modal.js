@@ -18,6 +18,14 @@ class CropperModal {
             this.rotate(90);
         });
 
+        this.modal.addFooterBtn('Zoom in', 'tingle-btn tingle-btn--primary', () => {
+            this.cropper.zoom(0.1);
+        });
+
+        this.modal.addFooterBtn('Zoom out', 'tingle-btn tingle-btn--primary', () => {
+            this.cropper.zoom(-0.1);
+        });
+
         this.modal.addFooterBtn('Valider', 'tingle-btn tingle-btn--primary', () => {
             callback(this.cropper.getData());
             this.modal.close();

@@ -54,7 +54,10 @@ const ImageUploader = (function() {
 
             const defaults = {
                 cropper: false,
-                cropperOptions: {},
+                cropperOptions: {
+                    zoomOnTouch: false,
+                    zoomOnWheel: false,
+                },
                 max: 0,
                 service: null,
                 sortable: false,
