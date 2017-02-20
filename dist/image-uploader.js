@@ -18,19 +18,19 @@ var CropperModal = function () {
             }
         });
 
-        this.modal.addFooterBtn('↺', 'tingle-btn tingle-btn--primary', function () {
+        this.modal.addFooterBtn('↺', 'tingle-btn tingle-btn--default', function () {
             _this.rotate(-90);
         });
 
-        this.modal.addFooterBtn('↻', 'tingle-btn tingle-btn--primary', function () {
+        this.modal.addFooterBtn('↻', 'tingle-btn tingle-btn--default', function () {
             _this.rotate(90);
         });
 
-        this.modal.addFooterBtn('+', 'tingle-btn tingle-btn--primary', function () {
+        this.modal.addFooterBtn('+', 'tingle-btn tingle-btn--default', function () {
             _this.cropper.zoom(0.1);
         });
 
-        this.modal.addFooterBtn('-', 'tingle-btn tingle-btn--primary', function () {
+        this.modal.addFooterBtn('-', 'tingle-btn tingle-btn--default', function () {
             _this.cropper.zoom(-0.1);
         });
 
@@ -40,6 +40,7 @@ var CropperModal = function () {
         });
 
         var content = document.createElement('div');
+        content.classList.add('iu-cropper-wrapper');
 
         this.cropperEl = document.createElement('img');
         content.appendChild(this.cropperEl);

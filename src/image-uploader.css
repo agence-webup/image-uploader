@@ -22,7 +22,7 @@
   border-radius: 6px;
   background-color: #f9f9f9;
   background-position: center;
-  background-size: contain;
+  background-size: cover;
   background-repeat: no-repeat;
   box-shadow: 0 2px 15px 0 #dbdee2;
   line-height: 0;
@@ -95,4 +95,11 @@
   display: inline-block !important;
   line-height: normal;
   cursor: pointer;
+}
+
+/* cropper
+-------------------------------------------------------------- */
+
+.iu-cropper-wrapper {
+  height: 50vh;
 }

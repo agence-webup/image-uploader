@@ -10,19 +10,19 @@ class CropperModal {
             }
         });
 
-        this.modal.addFooterBtn('↺', 'tingle-btn tingle-btn--primary', () => {
+        this.modal.addFooterBtn('↺', 'tingle-btn tingle-btn--default', () => {
             this.rotate(-90);
         });
 
-        this.modal.addFooterBtn('↻', 'tingle-btn tingle-btn--primary', () => {
+        this.modal.addFooterBtn('↻', 'tingle-btn tingle-btn--default', () => {
             this.rotate(90);
         });
 
-        this.modal.addFooterBtn('+', 'tingle-btn tingle-btn--primary', () => {
+        this.modal.addFooterBtn('+', 'tingle-btn tingle-btn--default', () => {
             this.cropper.zoom(0.1);
         });
 
-        this.modal.addFooterBtn('-', 'tingle-btn tingle-btn--primary', () => {
+        this.modal.addFooterBtn('-', 'tingle-btn tingle-btn--default', () => {
             this.cropper.zoom(-0.1);
         });
 
@@ -32,6 +32,7 @@ class CropperModal {
         });
 
         const content = document.createElement('div');
+        content.classList.add('iu-cropper-wrapper');
 
         this.cropperEl = document.createElement('img');
         content.appendChild(this.cropperEl);
