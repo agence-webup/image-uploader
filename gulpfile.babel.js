@@ -1,7 +1,6 @@
 "use strict";
 
 import gulp from 'gulp';
-import browserSync from 'browser-sync';
 import autoprefixer from 'gulp-autoprefixer';
 import cleanCSS from 'gulp-clean-css';
 import uglify from 'gulp-uglify';
@@ -9,7 +8,7 @@ import babel from 'gulp-babel';
 import ghPages from 'gulp-gh-pages';
 import concat from 'gulp-concat';
 
-const reload = browserSync.reload;
+const browserSync = require('browser-sync').create();
 
 /* config
 ---------------------------------------------------- */
@@ -22,9 +21,7 @@ gulp.task('css', () => {
         }))
         .pipe(cleanCSS())
         .pipe(gulp.dest('dist'))
-        .pipe(reload({
-            stream: true
-        }));
+        .pipe(browserSync.stream());
 });
 
 
@@ -34,9 +31,13 @@ gulp.task('js', () => {
         .pipe(babel({
             presets: ['es2015']
         }))
-        .pipe(gulp.dest('dist'));
+        .pipe(gulp.dest('dist'))
 });
 
+gulp.task('js-watch', ['js'], function (done) {
+    browserSync.reload();
+    done();
+});
 
 gulp.task('deploy', function() {
     return gulp.src('./dist/**/*')
@@ -44,10 +45,17 @@ gulp.task('deploy', function() {
 });
 
 
-gulp.task('watch', () => {
+gulp.task('watch', ['serve'], () => {
     gulp.watch('src/*.css', ['css']);
-    gulp.watch('src/*.js', ['js']);
+    gulp.watch('src/*.js', ['js-watch']);
 });
 
+gulp.task('serve', function() {
+    browserSync.init({
+        server: {
+            baseDir: "./"
+        }
+    });
+});
 
 gulp.task('default', ['css', 'js']);
