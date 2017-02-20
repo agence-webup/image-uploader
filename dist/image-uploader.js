@@ -18,23 +18,23 @@ var CropperModal = function () {
             }
         });
 
-        this.modal.addFooterBtn('Turn left', 'tingle-btn tingle-btn--primary', function () {
+        this.modal.addFooterBtn('↺', 'tingle-btn tingle-btn--primary', function () {
             _this.rotate(-90);
         });
 
-        this.modal.addFooterBtn('Turn right', 'tingle-btn tingle-btn--primary', function () {
+        this.modal.addFooterBtn('↻', 'tingle-btn tingle-btn--primary', function () {
             _this.rotate(90);
         });
 
-        this.modal.addFooterBtn('Zoom in', 'tingle-btn tingle-btn--primary', function () {
+        this.modal.addFooterBtn('+', 'tingle-btn tingle-btn--primary', function () {
             _this.cropper.zoom(0.1);
         });
 
-        this.modal.addFooterBtn('Zoom out', 'tingle-btn tingle-btn--primary', function () {
+        this.modal.addFooterBtn('-', 'tingle-btn tingle-btn--primary', function () {
             _this.cropper.zoom(-0.1);
         });
 
-        this.modal.addFooterBtn('Valider', 'tingle-btn tingle-btn--primary', function () {
+        this.modal.addFooterBtn('Valider', 'tingle-btn tingle-btn--primary tingle-btn--pull-right', function () {
             callback(_this.cropper.getData());
             _this.modal.close();
         });
