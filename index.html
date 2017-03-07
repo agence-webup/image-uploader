@@ -41,13 +41,48 @@
     <script src="https://rawgit.com/agence-webup/dropmic/master/dist/dropmic.js"></script>
     <script src="dist/image-uploader.js"></script>
     <script type="text/javascript">
-    var el = document.querySelector('[data-js=uploader]')
-    new ImageUploader(el, {
-        cropper: true,
-        deletable: false,
-        max: 0,
-        sortable: true,
+    var el = document.querySelector('[data-js=uploader]');
+    new FileUploader(el, {
+        data: function(callback) {
+            callback([{
+                id: 1,
+                url: 'http://lorempixel.com/400/200/food/1/'
+            }]);
+        },
+        // onAdd(dto, callback, progress) {
+        //     console.log(dto);
+        //     progress(50);
+        //     setTimeout(function () {
+        //         callback({
+        //             id: 2,
+        //             url: 'http://lorempixel.com/400/200/food/2/'
+        //         });
+        //     }, 1000);
+        // },
+        // onUpdate(dto, callback, progress) {
+        //     console.log(dto);
+        //     progress(50);
+        //     setTimeout(function () {
+        //         callback({
+        //             id: 1,
+        //             url: 'http://lorempixel.com/400/200/food/3/'
+        //         });
+        //     }, 1000);
+        // },
+        // onDelete(dto, callback) {
+        //     console.log(dto);
+        //     callback();
+        // },
+        // onSort(items) {
+        //     console.log(items);
+        // }
     });
+    // new ImageUploader(el, {
+    //     cropper: true,
+    //     deletable: false,
+    //     max: 0,
+    //     sortable: true,
+    // });
     </script>
 </body>
 </html>

@@ -60,6 +60,321 @@ var CropperModal = function () {
     return CropperModal;
 }();
 
+var FileUploader =
+/**
+ * Create a new instance
+ * @param  {Element} el
+ * @param  {Object} options
+ */
+function FileUploader(el) {
+    var _this2 = this;
+
+    var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+    _classCallCheck(this, FileUploader);
+
+    var defaults = {
+        cropper: false,
+        cropperOptions: {
+            zoomOnTouch: false,
+            zoomOnWheel: false
+        },
+        maxItems: 0,
+        sortable: false,
+        deletable: false,
+        strings: {
+            selectFile: "Choisir un fichier",
+            actions: "Actions",
+            update: "Modifier",
+            delete: "Supprimer"
+        }
+    };
+
+    this._el = el;
+    this._items = {};
+    this._itemViews = {};
+    this._options = Object.assign({}, defaults, options);
+    this._editId = null;
+
+    _initAddView.bind(this)();
+
+    if (typeof this._options.data === "function") {
+        this._options.data(function (items) {
+            items.forEach(function (item) {
+                _addItem.bind(_this2)(item);
+            });
+        });
+    }
+};
+
+/* Actions
+-------------------------------------------------------------- */
+
+/**
+ * Add an item
+ * @param {Object} item
+ */
+
+
+function _addItem(item) {
+    var itemView = _makeItemView.bind(this)(item);
+    this._el.insertBefore(itemView, this._addView);
+
+    this._items[item.id] = item;
+    this._itemViews[item.id] = itemView;
+
+    if (this._options.maxItems && Object.keys(this._items).length >= this._options.maxItems) {
+        this._addView.classList.add('ui-hidden');
+    }
+}
+
+/**
+ * Update an item
+ * @param  {Object} item
+ */
+function _updateItem(item) {
+    this._items[item.id] = item;
+    this._itemViews[item.id].style['background-image'] = 'url("' + item.url + '")';
+}
+
+/**
+ * Remove an item
+ * @param  {Object} item
+ */
+function _removeItem(item) {
+    this._el.removeChild(this._itemViews[item.id]);
+
+    delete this._items[item.id];
+    delete this._itemViews[item.id];
+
+    if (this._options.maxItems && Object.keys(this._items).length < this._options.maxItems) {
+        this._addView.classList.remove('ui-hidden');
+    }
+}
+
+/* Event handlers
+-------------------------------------------------------------- */
+
+/**
+ * Select file handler
+ * @param  {Event} event
+ */
+function _selectFile(event) {
+    var _this3 = this;
+
+    var fileInput = event.target;
+    if (fileInput.files.length == 0) {
+        return;
+    }
+    var file = fileInput.files[0];
+
+    if (this._options.cropper) {
+        this.modal = new CropperModal(file, this._options.cropperOptions, function (data) {
+            _uploadFile.bind(_this3)(_this3._editId, file, data);
+            _this3._editId = null;
+        });
+    } else {
+        _uploadFile.bind(this)(this._editId, file);
+        this._editId = null;
+    }
+
+    fileInput.value = null;
+}
+
+/**
+ * Sort handler
+ */
+function _sortItems() {
+    var items = [];
+    var els = this._el.querySelectorAll('[data-item-id]');
+    [].forEach.call(els, function (el) {
+        items.push(el.getAttribute('data-item-id'));
+    });
+
+    if (typeof this._options.onSort === "function") {
+        this._options.onSort(items);
+    }
+}
+
+/**
+ * Add or update picture
+ * @param  {?mixed} id if null add else update
+ * @param  {File} file
+ * @param  {?Object} crop
+ */
+function _uploadFile(id, file, crop) {
+    var _this4 = this;
+
+    if (id === null) {
+        var itemDto = {
+            file: file,
+            crop: crop
+        };
+
+        if (typeof this._options.onAdd === "function") {
+            this._options.onAdd(itemDto, function (item) {
+                _addItem.bind(_this4)(item);
+            }, function (rate) {
+                _updateProgressBar.bind(this)(rate);
+            });
+        } else {
+            _loadFile.bind(this)(itemDto, function (item) {
+                _addItem.bind(_this4)(item);
+            });
+        }
+    } else {
+        var itemDto = {
+            id: id,
+            file: file,
+            crop: crop
+        };
+
+        if (typeof this._options.onUpdate === "function") {
+            this._options.onUpdate(itemDto, function (item) {
+                _updateItem.bind(_this4)(item);
+            }, function (rate) {
+                _updateProgressBar.bind(this)(rate);
+            });
+        } else {
+            _loadFile.bind(this)(itemDto, function (item) {
+                _updateItem.bind(_this4)(item);
+            });
+        }
+    }
+}
+
+/**
+ * Load file
+ * @param  {Object}   itemDto
+ * @param  {Function} callback
+ */
+function _loadFile(itemDto, callback) {
+    var fileReader = new FileReader();
+    fileReader.addEventListener('load', function (event) {
+        callback({
+            id: itemDto.id ? itemDto.id : new Date().getTime(),
+            url: event.target.result
+        });
+    });
+    fileReader.readAsDataURL(itemDto.file);
+}
+
+/* View
+-------------------------------------------------------------- */
+
+/**
+ * Init add View
+ */
+function _initAddView() {
+    // file input
+    var fileInput = document.createElement('input');
+    fileInput.setAttribute('type', 'file');
+    fileInput.classList.add('iu-item__inputFile');
+    fileInput.addEventListener('change', _selectFile.bind(this));
+    this._fileInput = fileInput;
+
+    // label
+    var label = document.createElement('label');
+    label.classList.add('iu-item__inputLabel');
+    label.innerHTML = this._options.strings.selectFile;
+
+    // label wrapper
+    var labelWrapper = document.createElement('span');
+    labelWrapper.classList.add('iu-item__inputWrapper');
+    labelWrapper.appendChild(label);
+
+    // add view
+    var addView = document.createElement('div');
+    addView.classList.add('iu-item');
+    addView.classList.add('iu-item--input');
+    addView.classList.add('ui-item__sortable');
+    addView.appendChild(fileInput);
+    addView.appendChild(labelWrapper);
+    addView.addEventListener('click', function (event) {
+        fileInput.click();
+    });
+    if (this._options.sortable) {
+        sortable(addView, _sortItems.bind(this));
+    }
+    this._addView = addView;
+
+    this._el.appendChild(addView);
+}
+
+/**
+ * Create a item element
+ * @param  {Object} item
+ * @return {Element}
+ */
+function _makeItemView(item) {
+    var itemView = document.createElement('div');
+    itemView.classList.add('iu-item');
+    itemView.classList.add('ui-item__sortable');
+    itemView.setAttribute('draggable', true);
+    itemView.setAttribute('data-item-id', item.id);
+    itemView.style['background-image'] = 'url("' + item.url + '")';
+
+    var span = document.createElement('span');
+    span.classList.add('iu-item__action');
+    span.classList.add('dropmic');
+    span.setAttribute('data-dropmic', item.id);
+    span.setAttribute('data-dropmic-direction', 'bottom-middle');
+    span.setAttribute('role', 'navigation');
+
+    var button = document.createElement('button');
+    button.setAttribute('data-dropmic-btn', null);
+    button.innerHTML = this._options.strings.actions;
+
+    span.appendChild(button);
+    itemView.appendChild(span);
+
+    _initDopmic.bind(this)(span, item);
+
+    if (this._options.sortable) {
+        sortable(itemView, _sortItems.bind(this));
+    }
+
+    return itemView;
+}
+
+/**
+ * Init dropmic for actions on picture element
+ * @param  {Element} el Item element
+ * @param  {object}  item Item
+ */
+function _initDopmic(el, item) {
+    var _this5 = this;
+
+    var dropmic = new Dropmic(el);
+
+    dropmic.addBtn(this._options.strings.update, function (event) {
+        event.preventDefault();
+        _this5._editId = item.id;
+        _this5._fileInput.click();
+    });
+
+    if (this._options.deletable) {
+        dropmic.addBtn(this._options.strings.delete, function (event) {
+            event.preventDefault();
+            if (typeof _this5._options.onDelete === "function") {
+                _this5._options.onDelete(item, function () {
+                    _removeItem.bind(_this5)(item);
+                });
+            } else {
+                _removeItem.bind(_this5)(item);
+            }
+        });
+    }
+}
+
+/**
+ * Update the progress bar
+ * @param  {[type]} rate
+ */
+function _updateProgressBar(rate) {
+    console.log('progress', rate);
+}
+
 "use strict";
 
 /*
@@ -111,7 +426,7 @@ var ImageUploader = function () {
      */
 
     var ImageUploader = function ImageUploader(el) {
-        var _this2 = this;
+        var _this6 = this;
 
         var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
@@ -139,9 +454,9 @@ var ImageUploader = function () {
 
         this[_service].all().then(function (pictures) {
             pictures.forEach(function (picture) {
-                _this2[_pictures][picture.id] = picture;
+                _this6[_pictures][picture.id] = picture;
             });
-            initView.bind(_this2)();
+            initView.bind(_this6)();
         });
     };
 
@@ -156,23 +471,23 @@ var ImageUploader = function () {
 
 
     function addPicture(file, crop) {
-        var _this3 = this;
+        var _this7 = this;
 
         var pictureDto = {
             file: file,
             crop: crop
         };
         this[_service].add(pictureDto).then(function (picture) {
-            var length = _this3[_pictureViews].length;
-            var view = makePictureView.bind(_this3)(picture);
+            var length = _this7[_pictureViews].length;
+            var view = makePictureView.bind(_this7)(picture);
 
-            _this3.el.insertBefore(view, _this3[_addView]);
+            _this7.el.insertBefore(view, _this7[_addView]);
 
-            _this3[_pictures][picture.id] = picture;
-            _this3[_pictureViews][picture.id] = view;
+            _this7[_pictures][picture.id] = picture;
+            _this7[_pictureViews][picture.id] = view;
 
-            if (_this3[_options].max && Object.keys(_this3[_pictures]).length >= _this3[_options].max) {
-                _this3[_addView].classList.add('ui-hidden');
+            if (_this7[_options].max && Object.keys(_this7[_pictures]).length >= _this7[_options].max) {
+                _this7[_addView].classList.add('ui-hidden');
             }
         });
     }
@@ -184,7 +499,7 @@ var ImageUploader = function () {
      * @param  {?Object} crop
      */
     function updatePicture(id, file, crop) {
-        var _this4 = this;
+        var _this8 = this;
 
         var pictureDto = {
             id: id,
@@ -192,8 +507,8 @@ var ImageUploader = function () {
             crop: crop
         };
         this[_service].update(pictureDto).then(function (picture) {
-            _this4[_pictureViews][picture.id].style['background-image'] = 'url("' + picture.url + '")';
-            _this4[_pictures][picture.id] = picture;
+            _this8[_pictureViews][picture.id].style['background-image'] = 'url("' + picture.url + '")';
+            _this8[_pictures][picture.id] = picture;
         });
     }
 
@@ -202,15 +517,15 @@ var ImageUploader = function () {
      * @param  {mixed} id
      */
     function removePicture(id) {
-        var _this5 = this;
+        var _this9 = this;
 
         this[_service].delete(id).then(function () {
-            _this5.el.removeChild(_this5[_pictureViews][id]);
-            delete _this5[_pictures][id];
-            delete _this5[_pictureViews][id];
+            _this9.el.removeChild(_this9[_pictureViews][id]);
+            delete _this9[_pictures][id];
+            delete _this9[_pictureViews][id];
 
-            if (_this5[_options].max && Object.keys(_this5[_pictures]).length < _this5[_options].max) {
-                _this5[_addView].classList.remove('ui-hidden');
+            if (_this9[_options].max && Object.keys(_this9[_pictures]).length < _this9[_options].max) {
+                _this9[_addView].classList.remove('ui-hidden');
             }
         });
     }
@@ -220,7 +535,7 @@ var ImageUploader = function () {
      * @param  Event event
      */
     function selectFile(event) {
-        var _this6 = this;
+        var _this10 = this;
 
         var fileInput = event.target;
         if (fileInput.files.length == 0) {
@@ -230,8 +545,8 @@ var ImageUploader = function () {
 
         if (this[_options].cropper) {
             this.modal = new CropperModal(file, this[_options].cropperOptions, function (data) {
-                uploadFile.bind(_this6)(_this6[_editId], file, data);
-                _this6[_editId] = null;
+                uploadFile.bind(_this10)(_this10[_editId], file, data);
+                _this10[_editId] = null;
             });
         } else {
             uploadFile.bind(this)(this[_editId], file);
@@ -314,20 +629,20 @@ var ImageUploader = function () {
      * @param  {mixed} id Picture ID
      */
     function initDopmic(el, id) {
-        var _this7 = this;
+        var _this11 = this;
 
         var dropmic = new Dropmic(el);
 
         dropmic.addBtn('Modifier', function (event) {
             event.preventDefault();
-            _this7[_editId] = id;
-            _this7._fileInput.click();
+            _this11[_editId] = id;
+            _this11._fileInput.click();
         });
 
         if (this[_options].deletable) {
             dropmic.addBtn('Supprimer', function (event) {
                 event.preventDefault();
-                removePicture.bind(_this7)(id);
+                removePicture.bind(_this11)(id);
             });
         }
     }
@@ -336,7 +651,7 @@ var ImageUploader = function () {
      * Init add View
      */
     function initAddView() {
-        var _this8 = this;
+        var _this12 = this;
 
         this._fileInput = createElement('input', {
             type: 'file',
@@ -360,7 +675,7 @@ var ImageUploader = function () {
         });
 
         div.addEventListener('click', function (event) {
-            _this8._fileInput.click();
+            _this12._fileInput.click();
         });
 
         div.appendChild(this._fileInput);
@@ -409,11 +724,11 @@ var AjaxService = function () {
     _createClass(AjaxService, [{
         key: 'all',
         value: function all() {
-            var _this9 = this;
+            var _this13 = this;
 
             return new Promise(function (resolve, reject) {
                 var xhr = new XMLHttpRequest();
-                xhr.open('GET', _this9.url, true);
+                xhr.open('GET', _this13.url, true);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState == 4 && xhr.status == 200) {
                         var data = JSON.parse(xhr.response);
@@ -428,7 +743,7 @@ var AjaxService = function () {
     }, {
         key: 'add',
         value: function add(pictureDto) {
-            var _this10 = this;
+            var _this14 = this;
 
             return new Promise(function (resolve, reject) {
                 var formdata = new FormData();
@@ -436,7 +751,7 @@ var AjaxService = function () {
                 formdata.append('crop', JSON.stringify(pictureDto.crop));
 
                 var xhr = new XMLHttpRequest();
-                xhr.open('POST', _this10.url, true);
+                xhr.open('POST', _this14.url, true);
 
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState == 4 && xhr.status == 200) {
@@ -452,7 +767,7 @@ var AjaxService = function () {
     }, {
         key: 'update',
         value: function update(pictureDto) {
-            var _this11 = this;
+            var _this15 = this;
 
             return new Promise(function (resolve, reject) {
                 var formdata = new FormData();
@@ -460,7 +775,7 @@ var AjaxService = function () {
                 formdata.append('crop', JSON.stringify(pictureDto.crop));
 
                 var xhr = new XMLHttpRequest();
-                xhr.open('POST', _this11.url + '/' + pictureDto.id, true);
+                xhr.open('POST', _this15.url + '/' + pictureDto.id, true);
 
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState == 4 && xhr.status == 200) {
@@ -476,11 +791,11 @@ var AjaxService = function () {
     }, {
         key: 'delete',
         value: function _delete(id) {
-            var _this12 = this;
+            var _this16 = this;
 
             return new Promise(function (resolve, reject) {
                 var xhr = new XMLHttpRequest();
-                xhr.open('DELETE', _this12.url + '/' + id, true);
+                xhr.open('DELETE', _this16.url + '/' + id, true);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState == 4 && xhr.status == 200) {
                         resolve();
@@ -494,11 +809,11 @@ var AjaxService = function () {
     }, {
         key: 'sort',
         value: function sort(pictures) {
-            var _this13 = this;
+            var _this17 = this;
 
             return new Promise(function (resolve, reject) {
                 var xhr = new XMLHttpRequest();
-                xhr.open('POST', _this13.url + '/sort', true);
+                xhr.open('POST', _this17.url + '/sort', true);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState == 4 && xhr.status == 200) {
                         resolve();
@@ -525,26 +840,26 @@ var MockService = function () {
     _createClass(MockService, [{
         key: 'all',
         value: function all() {
-            var _this14 = this;
+            var _this18 = this;
 
             return new Promise(function (resolve, reject) {
-                resolve(_this14._pictures);
+                resolve(_this18._pictures);
             });
         }
     }, {
         key: 'add',
         value: function add(pictureDto) {
-            var _this15 = this;
+            var _this19 = this;
 
             return new Promise(function (resolve, reject) {
                 var fileReader = new FileReader();
                 fileReader.addEventListener('load', function (event) {
                     var picture = {
-                        id: _this15._pictures.length + 1,
+                        id: _this19._pictures.length + 1,
                         url: event.target.result
                     };
 
-                    _this15._pictures.push(picture);
+                    _this19._pictures.push(picture);
                     resolve(picture);
                 });
                 fileReader.readAsDataURL(pictureDto.file);
@@ -553,15 +868,15 @@ var MockService = function () {
     }, {
         key: 'update',
         value: function update(pictureDto) {
-            var _this16 = this;
+            var _this20 = this;
 
             return new Promise(function (resolve, reject) {
                 var fileReader = new FileReader();
                 fileReader.addEventListener('load', function (event) {
-                    for (var i = 0; i < _this16._pictures.length; i++) {
-                        var picture = _this16._pictures[i];
+                    for (var i = 0; i < _this20._pictures.length; i++) {
+                        var picture = _this20._pictures[i];
                         if (picture.id == pictureDto.id) {
-                            _this16._pictures[i].url = event.target.result;
+                            _this20._pictures[i].url = event.target.result;
                             resolve(picture);
                             return;
                         }
@@ -575,10 +890,10 @@ var MockService = function () {
     }, {
         key: 'delete',
         value: function _delete(picture) {
-            var _this17 = this;
+            var _this21 = this;
 
             return new Promise(function (resolve, reject) {
-                _this17._pictures = _this17._pictures.filter(function (_picture) {
+                _this21._pictures = _this21._pictures.filter(function (_picture) {
                     return _picture.id != picture.id;
                 });
                 resolve();
