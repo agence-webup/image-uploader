@@ -1,5 +1,8 @@
 "use strict";
 
+import tingle from 'tingle.js';
+import Cropper from 'cropperjs';
+
 class CropperModal {
     constructor(file, options, callback) {
         this.modal = new tingle.modal({
@@ -46,3 +49,5 @@ class CropperModal {
         this.cropper.rotate(angle);
     }
 }
+
+module.exports = CropperModal;

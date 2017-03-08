@@ -4,9 +4,10 @@ import gulp from 'gulp';
 import autoprefixer from 'gulp-autoprefixer';
 import cleanCSS from 'gulp-clean-css';
 import uglify from 'gulp-uglify';
-import babel from 'gulp-babel';
 import ghPages from 'gulp-gh-pages';
 import concat from 'gulp-concat';
+import browserify from 'browserify';
+import source from 'vinyl-source-stream';
 
 const browserSync = require('browser-sync').create();
 
@@ -26,15 +27,21 @@ gulp.task('css', () => {
 
 
 gulp.task('js', () => {
-    return gulp.src('src/*.js')
-        .pipe(concat('image-uploader.js'))
-        .pipe(babel({
-            presets: ['es2015']
-        }))
-        .pipe(gulp.dest('dist'))
+    return browserify({
+            entries: ["./src/file-uploader.js"],
+            standalone: 'FileUploader'
+        })
+        .transform('babelify', {
+            presets: ["es2015"],
+            global: true,
+            ignore: /node_modules/
+        })
+        .bundle()
+        .pipe(source("image-uploader.js"))
+        .pipe(gulp.dest("./dist"));
 });
 
-gulp.task('js-watch', ['js'], function (done) {
+gulp.task('js-watch', ['js'], function(done) {
     browserSync.reload();
     done();
 });

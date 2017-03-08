@@ -34,15 +34,16 @@
 </head>
 <body>
     <div class="box">
-        <div data-js="uploader" data-label="Choisir un fichier" class="iu-container"></div>
+        <div data-js="uploader" class="iu-container"></div>
     </div>
-    <script src="https://rawgit.com/robinparisi/tingle/master/dist/tingle.min.js"></script>
-    <script src="https://rawgit.com/fengyuanchen/cropperjs/master/dist/cropper.min.js"></script>
-    <script src="https://rawgit.com/agence-webup/dropmic/master/dist/dropmic.js"></script>
+
     <script src="dist/image-uploader.js"></script>
     <script type="text/javascript">
     var el = document.querySelector('[data-js=uploader]');
     new FileUploader(el, {
+        cropper: true,
+        deletable: true,
+        sortable: true,
         data: function(callback) {
             callback([{
                 id: 1,
@@ -77,12 +78,6 @@
         //     console.log(items);
         // }
     });
-    // new ImageUploader(el, {
-    //     cropper: true,
-    //     deletable: false,
-    //     max: 0,
-    //     sortable: true,
-    // });
     </script>
 </body>
 </html>

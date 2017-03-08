@@ -1,4 +1,4 @@
-const sortable = (function() {
+module.exports = (function() {
 
     var dragSrcEl = null;
     var callback = null;

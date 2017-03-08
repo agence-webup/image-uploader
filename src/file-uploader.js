@@ -1,3 +1,7 @@
+import Dropmic from 'dropmic';
+import CropperModal from './cropper-modal';
+import sortable from './sortable';
+
 class FileUploader {
     /**
      * Create a new instance
@@ -39,6 +43,8 @@ class FileUploader {
         }
     }
 }
+
+module.exports = FileUploader;
 
 /* Actions
 -------------------------------------------------------------- */
